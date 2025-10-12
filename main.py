@@ -1,4 +1,4 @@
-def test(x: string) -> float:
+def test(x: str) -> str:
     return "string: " + x
 
 def main():
