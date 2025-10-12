@@ -10,6 +10,8 @@
       buildInputs = with pkgs; [
         (python3.withPackages (py-pkgs: with py-pkgs; [ uv ]))
       ];
+
+      shellHook = "source .venv/bin/activate";
     };
   };
 }
