@@ -5,9 +5,6 @@ import glob
 import uuid  # Ajoute cette ligne
 
 
-
-from sexpdata import Symbol
-
 def _format_sexp_kicad(data, indent=0) -> str:
     """
     Formate une S-expression selon le style exact de KiCad :
@@ -102,7 +99,7 @@ class KiCadLibrary:
         with open(lib_path, 'r', encoding='utf-8') as f:
             lib_data = loads(f.read())
 
-        symbols = {}
+       #symbols = {}
         for item in lib_data:
             if isinstance(item, list) and item and item[0] == Symbol('symbol'):
                 symbol_name = str(item[1])
