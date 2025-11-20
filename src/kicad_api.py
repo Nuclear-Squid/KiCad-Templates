@@ -71,6 +71,7 @@ def _format_sexp_kicad(data, indent=0) -> str:
 class KiCadLibrary:
     """Classe pour gérer les bibliothèques de symboles (.kicad_sym) et d'empreintes (.pretty)."""
 
+    '''
     @staticmethod
     @staticmethod
     def import_symbol_library(lib_path: str) -> Dict[str, Dict[str, List]]:
@@ -90,13 +91,13 @@ class KiCadLibrary:
                 lib_name = os.path.basename(lib_path).replace(".kicad_sym", "")
                 libraries[lib_name] = KiCadLibrary._extract_symbols(lib_data)
         return libraries
-   
+    '''
     def _format_sexp(self, data, indent=0) -> str:
         return _format_sexp_kicad(data, indent)
 
 
     #@staticmethod
-    def extract_symbols(self, lib_path: str, lib_prefix: str, ref: str) -> Dict[str, List]:
+    def extract_symbols(self, lib_path: str, lib_prefix: str, ref: str) -> str:
         """Extrait tous les symboles d'un fichier .kicad_sym et les retourne sous forme de S-Expressions."""
         with open(lib_path, 'r', encoding='utf-8') as f:
             lib_data = loads(f.read())
@@ -108,7 +109,7 @@ class KiCadLibrary:
                 if symbol_name == ref:
                     item[1] = f'"{lib_prefix}:{ref}"'
                     return self._format_sexp(item)
-        return None
+        return ''
     
     @staticmethod
     def extract_all_symbols(lib_path: str) -> Dict[str, List]:
@@ -620,9 +621,12 @@ class KiCadSchematic:
                 components.append({"ref": ref, "value": value})
         return components
 
-    def load_symbol_library(self, lib_path: str, lib_name: str) -> None:
-        """Charge une bibliothèque de symboles dans le schématique."""
-        self.libraries[lib_name] = KiCadLibrary.import_symbol_library(lib_path)
+
+#    def load_symbol_library(self, lib_path: str, lib_name: str) -> None:
+#        """Charge une bibliothèque de symboles dans le schématique."""
+#       self.libraries[lib_name] = KiCadLibrary.import_symbol_library(lib_path)
+#
+
 
     def get_symbol_from_library(self, lib_name: str, symbol_name: str) -> Optional[List]:   
         """Récupère un symbole depuis une bibliothèque chargée."""
@@ -723,11 +727,11 @@ symbol_MCU = lib.extract_symbols(cpu_lib_path,"CPU","CDP1802ACE")
 # schematic.load_symbol_library("/Applications/KiCad/KiCad.app/Contents/SharedSupport/symbols/", "Video.kicad_sym")
 # print(schematic.libraries)
 # if "R" in symbols:device_lib_path
-schematic.add_component(symbol_R,"R3","1k", at=[300,100,100],footprint="None")
+#schematic.add_component(symbol_R,"R3","1k", at=[300,100,100],footprint="None")
 
-schematic.add_component(symbol_C,"C2","100nF", at=[100,100,100],footprint="None")
+#schematic.add_component(symbol_C,"C2","100nF", at=[100,100,100],footprint="None")
   
-schematic.add_component(symbol_MCU,"U1","None", at=[100,150,100],footprint="None")
+#schematic.add_component(symbol_MCU,"U1","None", at=[100,150,100],footprint="None")
 
 # # # Récupérer un symbole depuis la bibliothèque
 # symbol = schematic.get_symbol_from_library("Device", "R")
