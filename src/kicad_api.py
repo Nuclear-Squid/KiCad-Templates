@@ -2,7 +2,9 @@ from sexpdata import loads, dumps, Symbol
 from typing import Dict, List, Optional, Union
 import os
 import glob
-import uuid  # Ajoute cette ligne
+import uuid
+
+from hierarchical_object import HierarchicalObject  # Ajoute cette ligne
 
 
 def _format_sexp_kicad(data, indent=0) -> str:
@@ -187,134 +189,293 @@ class KiCadSchematic:
 
     def add_hierarchical_sheet(
         self,
-        sheet_name: str,
-        sheet_file: str,
-        at_xy,
-        size_wh,
-        properties=None,
-        pins=None,
-        page_for_instance="1",
+        object,                          # attrs: sheet_name, sheet_file, at_xy, size_wh, properties, pins
+        page_for_instance: str = "2",
+        pin_margin_mm: float = 2.0,      # margem topo/base para distribuição
+        min_delta_mm: float = 1.0,       # espaçamento mínimo entre pinos do mesmo lado
+        net_wire_len_mm: float = 5.0,    # comprimento do “rabicho” de fio até o net label
     ):
-        if properties is None:
-            properties = {}
-        if pins is None:
-            pins = []
+        at_x, at_y = float(object.at_xy[0]), float(object.at_xy[1])   # (at X Y) — sem rotação
+        w, h       = float(object.size_wh[0]), float(object.size_wh[1])
+        x_left     = at_x
+        x_right    = at_x + w
+        y_top      = at_y
+        y_bot      = at_y + h
 
+        props = object.properties or {}
+        pins  = object.pins or []
+
+        # ---- Agrupa por lado (inclui bidirectional) ----
+        left_pins, right_pins = [], []
+        for p in pins:
+            t = p.get("type", "input")
+            if t in ("input", "power_in"):
+                left_pins.append(p)
+            elif t in ("output", "power_out"):
+                right_pins.append(p)
+            else:
+                (left_pins if p.get("side", "right") == "left" else right_pins).append(p)
+
+        # ---- Helpers de distribuição centralizada ----
+        def _spread_ys(n: int) -> list:
+            """
+            Distribui pinos centralizados:
+            - Divide a faixa útil em 'n' bins iguais
+            - Coloca cada pino no CENTRO de seu bin
+            """
+            if n <= 0:
+                return []
+            usable = max(h - 2 * pin_margin_mm, 0.1)
+            if n == 1:
+                return [at_y + h / 2.0]
+            bin_h = usable / n
+            first_center = y_top + pin_margin_mm + bin_h / 2.0
+            return [first_center + i * bin_h for i in range(n)]
+
+        def _resolve_y_for_group(group: list) -> list:
+            """Mistura Y explícito com Y automático centralizado + des-overlap e clamp."""
+            autos = _spread_ys(sum(1 for p in group if "y" not in p))
+            auto_it = iter(autos)
+            ys = []
+            for p in group:
+                ys.append(float(p["y"]) if "y" in p else next(auto_it))
+
+            low  = y_top + pin_margin_mm
+            high = y_bot - pin_margin_mm
+            if not ys:
+                return ys
+            ys[0] = min(max(ys[0], low), high)
+            for i in range(1, len(ys)):
+                target = max(ys[i], ys[i-1] + min_delta_mm)
+                ys[i] = min(target, high)
+
+            # Se acumulou no topo, recentra dentro do range possível
+            if ys[-1] > high and len(ys) > 1:
+                overflow = ys[-1] - high
+                spread = ys[-1] - ys[0]
+                min_needed = min_delta_mm * (len(ys) - 1)
+                slack = max(spread - min_needed, 0.0)
+                shift = min(overflow, slack)
+                if shift > 0:
+                    ys = [y - shift for y in ys]
+                    ys[0] = max(ys[0], low)
+                    for i in range(1, len(ys)):
+                        ys[i] = max(ys[i], ys[i-1] + min_delta_mm)
+                        ys[i] = min(ys[i], high)
+
+            return ys
+
+        ys_left  = _resolve_y_for_group(left_pins)
+        ys_right = _resolve_y_for_group(right_pins)
+
+        # ---- Monta o bloco (sheet ...) ----
         sheet_uuid = str(uuid.uuid4())
-
-        # --- bloco (sheet ...) ---
-
         sheet = [
             Symbol("sheet"),
-            [Symbol("at"), float(at_xy[0]), float(at_xy[1])],
-            [Symbol("size"), float(size_wh[0]), float(size_wh[1])],
+            [Symbol("at"), at_x, at_y],
+            [Symbol("size"), w, h],
             [Symbol("fields_autoplaced")],
-            [
-                Symbol("stroke"),
+            [Symbol("stroke"),
                 [Symbol("width"), 0.1524],
                 [Symbol("type"), Symbol("solid")],
                 [Symbol("color"), 0, 0, 0, 0],
             ],
-            [
-                Symbol("fill"),
-                [Symbol("color"), 0, 0, 0, 0.0],
-            ],
+            [Symbol("fill"), [Symbol("color"), 0, 0, 0, 0.0]],
             [Symbol("uuid"), f'"{sheet_uuid}"'],
+            [Symbol("property"), '"Sheet name"', f'"{object.sheet_name}"',
+                [Symbol("id"), 0],
+                [Symbol("at"), at_x + 2.0, at_y - 2.0, 0],
+                [Symbol("effects"),
+                    [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
+                    [Symbol("justify"), Symbol("left")],
+                ],
+            ],
+            [Symbol("property"), '"Sheet file"', f'"{object.sheet_file}"',
+                [Symbol("id"), 1],
+                [Symbol("at"), at_x + 2.0, at_y + 2.0, 0],
+                [Symbol("effects"),
+                    [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
+                    [Symbol("justify"), Symbol("left")],
+                ],
+            ],
         ]
 
-        # propriedades obrigatórias
-        sheet.append(
-            [
-                Symbol("property"),
-                '"Sheet name"',
-                f'"{sheet_name}"',
-                [Symbol("id"), 0],
-                [Symbol("at"), float(at_xy[0]) + 2.0, float(at_xy[1]) - 2.0, 0],
-                [
-                    Symbol("effects"),
-                    [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
-                    [Symbol("justify"), Symbol("left")],
-                ],
-            ]
-        )
-
-        sheet.append(
-            [
-                Symbol("property"),
-                '"Sheet file"',
-                f'"{sheet_file}"',
-                [Symbol("id"), 1],
-                [Symbol("at"), float(at_xy[0]) + 2.0, float(at_xy[1]) + 2.0, 0],
-                [
-                    Symbol("effects"),
-                    [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
-                    [Symbol("justify"), Symbol("left")],
-                ],
-            ]
-        )
-
-        # propriedades extra (Comment, etc.)
+        # Propriedades extras
         prop_id = 2
-        for key, val in properties.items():
+        for k, v in (props.items()):
             sheet.append(
-                [
-                    Symbol("property"),
-                    f'"{key}"',
-                    f'"{val}"',
-                    [Symbol("id"), prop_id],
-                    [Symbol("at"), float(at_xy[0]), float(at_xy[1]), 0],
-                    [
-                        Symbol("effects"),
-                        [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
-                        [Symbol("hide"), Symbol("yes")],
-                    ],
-                ]
+                [Symbol("property"), f'"{k}"', f'"{v}"',
+                [Symbol("id"), prop_id],
+                [Symbol("at"), at_x, at_y, 0],
+                [Symbol("effects"),
+                    [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
+                    [Symbol("hide"), Symbol("yes")],
+                ]]
             )
             prop_id += 1
 
-        # pins do sheet, com TEXT_EFFECTS
-        for p in pins:
+        # ---- Pinos esquerda (ângulo 180) ----
+        left_pin_positions = []  # [(pin_dict, (x,y))]
+        for p, y in zip(left_pins, ys_left):
+            name  = p.get("name", "IN")
+            ptype = p.get("type", "input")
             pin_uuid = str(uuid.uuid4())
-            angle = float(p.get("angle", 0))
             sheet.append(
-                [
-                    Symbol("pin"),
-                    f'"{p["name"]}"',
-                    Symbol(p["type"]),  # input/output/...
-                    [Symbol("at"), float(p["at"][0]), float(p["at"][1]), angle],
-                    [Symbol("effects"), [Symbol("font"), [Symbol("size"), 1.27, 1.27]]],
-                    [Symbol("uuid"), f'"{pin_uuid}"'],
-                ]
+                [Symbol("pin"), f'"{name}"', Symbol(ptype),
+                [Symbol("at"), x_left, y, 180.0],
+                [Symbol("effects"),
+                    [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
+                    [Symbol("justify"), Symbol("left")],
+                ],
+                [Symbol("uuid"), f'"{pin_uuid}"']]
             )
+            left_pin_positions.append((p, (x_left, y)))
 
-        # insere o sheet antes do (embedded_fonts no)
+        # ---- Pinos direita (ângulo 0) ----
+        right_pin_positions = []
+        for p, y in zip(right_pins, ys_right):
+            name  = p.get("name", "OUT")
+            ptype = p.get("type", "output")
+            pin_uuid = str(uuid.uuid4())
+            sheet.append(
+                [Symbol("pin"), f'"{name}"', Symbol(ptype),
+                [Symbol("at"), x_right, y, 0.0],
+                [Symbol("effects"),
+                    [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
+                    [Symbol("justify"), Symbol("right")],
+                ],
+                [Symbol("uuid"), f'"{pin_uuid}"']]
+            )
+            right_pin_positions.append((p, (x_right, y)))
+
+        # ---- Inserção do sheet ----
         insert_idx = len(self.data) - 1
+        if insert_idx < 0: insert_idx = 0
         self.data.insert(insert_idx, sheet)
 
-        # --- atualiza (sheet_instances) ---
+        # ---- sheet_instances ----
+        root_uuid = self._ensure_root_uuid()
+        si = self._ensure_section("sheet_instances")
+        has_root = any(
+            isinstance(e, list) and e and e[0] == Symbol("path") and str(e[1]) == '"/"'
+            for e in si[1:]
+        )
+        if not has_root:
+            si.append([Symbol("path"), '"/"', [Symbol("page"), '"1"']])
+        si.append([Symbol("path"), f'"/{sheet_uuid}"', [Symbol("page"), f'"{page_for_instance}"']])
 
-        root_uuid = None
-        for elem in self.data:
-            if isinstance(elem, list) and elem and elem[0] == Symbol("uuid"):
-                root_uuid = elem[1].strip('"')
-                break
+        # =====================================================================
+        #   NET LABELS (opcionais): cria fios e labels para pinos com p["net"]
+        # =====================================================================
+        def _add_wire(x1, y1, x2, y2):
+            self.data.append(
+                [Symbol("wire"),
+                [Symbol("pts"), [Symbol("xy"), x1, y1], [Symbol("xy"), x2, y2]],
+                [Symbol("stroke"), [Symbol("width"), 0], [Symbol("type"), Symbol("default")]],
+                [Symbol("uuid"), f'"{uuid.uuid4()}"']]
+            )
 
-        for elem in self.data:
-            if isinstance(elem, list) and elem and elem[0] == Symbol("sheet_instances"):
-                # path do novo sheet
-                elem.append(
-                    [
-                        Symbol("path"),
-                        f'"/{root_uuid}/{sheet_uuid}"',
-                        [Symbol("page"), f'"{page_for_instance}"'],
-                    ]
-                )
-                break
+        def _add_label(name, x, y, justify_sym):
+            # KiCad 9: justify deve estar dentro de (effects ...)
+            self.data.append(
+                [Symbol("label"), f'"{name}"',
+                [Symbol("at"), x, y, 0],
+                [Symbol("effects"),
+                    [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
+                    [Symbol("justify"), Symbol(justify_sym)]
+                ],
+                [Symbol("uuid"), f'"{uuid.uuid4()}"']]
+            )
+        
 
-        return {
-            "sheet_uuid": sheet_uuid,
-            "root_uuid": root_uuid,
-        }
+        # Esquerda: fio vai para x_left - net_wire_len_mm, label no fim com justify right
+        for p, (px, py) in left_pin_positions:
+            net = p.get("net")
+            if not net:
+                continue
+            x2 = px - float(net_wire_len_mm)
+            y2 = py
+            _add_wire(px, py, x2, y2)
+            _add_label(str(net), x2, y2, "right")
+
+        # Direita: fio vai para x_right + net_wire_len_mm, label no fim com justify left
+        for p, (px, py) in right_pin_positions:
+            net = p.get("net")
+            if not net:
+                continue
+            x2 = px + float(net_wire_len_mm)
+            y2 = py
+            _add_wire(px, py, x2, y2)
+            _add_label(str(net), x2, y2, "left")
+
+        return {"sheet_uuid": sheet_uuid}
+
+    def add_hierarchical_sheets(
+        self,
+        objects,                          # lista de HierarchicalObject (ou objs compatíveis)
+        origin_xy=(50.0, 50.0),           # canto superior-esquerdo inicial (mm)
+        flow="row",                       # por enquanto: "row" (quebra por largura)
+        max_row_width_mm=180.0,           # largura máxima da “linha” (mm) antes de quebrar
+        h_gap_factor=0.5,                 # gap horizontal = max(h_gap_factor * w_obj, min_hgap)
+        v_gap_factor=0.8,                 # gap vertical   = max(v_gap_factor * h_row, min_vgap)
+        min_hgap=4.0,                     # gaps mínimos (mm) para legibilidade
+        min_vgap=6.0,
+        page_for_instance_start=2,        # numeração de páginas para sheet_instances
+        pin_margin_mm=2.0,                # repassa para add_hierarchical_sheet
+        min_delta_mm=1.0,                 # repassa para add_hierarchical_sheet
+    ):
+        """
+        Adiciona vários hierarchical sheets e os distribui em linhas, com espaçamento
+        proporcional ao tamanho. Calcula e injeta at_xy automaticamente.
+        Retorna a lista de metadados [{object, sheet_uuid, at_xy, size_wh, page}, ...].
+        """
+        placed = []
+        cursor_x, cursor_y = float(origin_xy[0]), float(origin_xy[1])
+        row_height = 0.0
+        row_left_edge = cursor_x
+        page_num = int(page_for_instance_start)
+
+        def _hgap(w):  # gap proporcional à largura do bloco
+            #return max(h_gap_factor * float(w), float(min_hgap))
+            return 25
+
+        def _vgap(h):  # gap proporcional à maior altura da linha
+            #return max(v_gap_factor * float(h), float(min_vgap))
+            return 10
+        for obj in objects:
+            w = float(obj.size_wh[0])
+            h = float(obj.size_wh[1])
+
+            # quebra de linha se exceder a largura máxima
+            if flow == "row" and (cursor_x > row_left_edge) and (cursor_x + w > row_left_edge + float(max_row_width_mm)):
+                # próxima linha
+                cursor_x = row_left_edge
+                cursor_y = cursor_y + row_height + _vgap(row_height)
+                row_height = 0.0
+
+            # posiciona este bloco
+            obj.at_xy = [cursor_x, cursor_y]
+            meta = self.add_hierarchical_sheet(
+                object=obj,
+                page_for_instance=str(page_num),
+                pin_margin_mm=pin_margin_mm,
+                min_delta_mm=min_delta_mm
+            )
+            placed.append({
+                "object": obj,
+                "sheet_uuid": meta.get("sheet_uuid"),
+                "at_xy": tuple(obj.at_xy),
+                "size_wh": tuple(obj.size_wh),
+                "page": page_num
+            })
+
+            # avança cursor na linha
+            cursor_x += w + _hgap(w)
+            row_height = max(row_height, h)
+            page_num += 1
+
+        return placed
+
 
     def _format_sexp(self, data, indent=0) -> str:
         return _format_sexp_kicad(data, indent)
@@ -745,73 +906,3 @@ class KiCadAPI:
         self.pcb = KiCadPCB()
         return self.pcb
 
-
-# Initialiser l'API
-api = KiCadAPI()
-lib = KiCadLibrary()
-# Charger un schématique
-schematic = api.load_schematic("test_python.kicad_sch")
-
-
-device_lib_path = "/usr/share/kicad/symbols/Device.kicad_sym"  # Change it somehow
-cpu_lib_path = "/usr/share/kicad/symbols/CPU.kicad_sym"
-
-# ymbols = KiCadLibrary.extract_all_symbols(lib_path)
-
-symbol_R = lib.extract_symbols(device_lib_path, "Device", "R")
-symbol_C = lib.extract_symbols(device_lib_path, "Device", "C")
-symbol_MCU = lib.extract_symbols(cpu_lib_path, "CPU", "CDP1802ACE")
-
-
-# print(symbol_MCU)
-
-# print(symbol)
-
-# KiCadLibrary.print_symbols(symbols)
-# # Charger une bibliothèque de symboles
-# schematic.load_symbol_library("/Applications/KiCad/KiCad.app/Contents/SharedSupport/symbols/", "Video.kicad_sym")
-# print(schematic.libraries)
-# if "R" in symbols:device_lib_path
-# schematic.add_component(symbol_R,"R3","1k", at=[300,100,100],footprint="None")
-
-# schematic.add_component(symbol_C,"C2","100nF", at=[100,100,100],footprint="None")
-
-# schematic.add_component(symbol_MCU,"U1","None", at=[100,150,100],footprint="None")
-
-# # # Récupérer un symbole depuis la bibliothèque
-# symbol = schematic.get_symbol_from_library("Device", "R")
-# if symbol:
-#     print(f"Symbole trouvé : {symbol['name']}")
-
-# # Charger un PCB
-# pcb = api.load_pcb("mon_projet.kicad_pcb")
-
-# # Charger une bibliothèque d'empreintes
-# pcb.load_footprint_library("chemin/vers/les/empreintes/", "mes_empreintes")
-
-# # Récupérer une empreinte depuis la bibliothèque
-# footprint = pcb.get_footprint_from_library("mes_empreintes", "R_0805_2012Metric")
-# if footprint:
-#     print(f"Empreinte trouvée : {footprint}")
-
-"""
-# Test
-meta = schematic.add_hierarchical_sheet(
-    sheet_name = "divisor_bobo",
-    sheet_file = "divisor_bobo.kicad_sch",  # relativo ao projeto
-    at_xy = [200, 80],
-    size_wh = [60, 40],
-    properties = {"Comment": "Divisor reutilizável"},
-    pins = [
-        {"name":"in",  "type":"input",  "at":[100, 78]},
-        {"name":"out", "type":"output", "at":[160, 100]},
-        #{"name":"GND",  "type":"power_in", "at":[120, 120]},
-    ]
-)
-
-
-
-# # Exporter le schématique et le PCB
-schematic.export_schematic("test_python.kicad_sch")
-# pcb.export_pcb("mon_projet_modifie.kicad_pcb")
-"""
