@@ -191,9 +191,11 @@ class KiCadSchematic:
         self,
         object,                          # attrs: sheet_name, sheet_file, at_xy, size_wh, properties, pins
         page_for_instance: str = "2",
-        pin_margin_mm: float = 2.0,      # margem topo/base para distribuição
-        min_delta_mm: float = 1.0,       # espaçamento mínimo entre pinos do mesmo lado
-        net_wire_len_mm: float = 5.0,    # comprimento do “rabicho” de fio até o net label
+        pin_margin_mm: float = 2.0,      # pin margin from top/bottom edges
+        min_delta_mm: float = 1.0,       # minimum spacing between pins on the same side
+        net_wire_len_mm: float = 5.0,    # length of wire from pin to net label
+        equal_two_sides: bool = False,   # enables equal distribution on both sides
+        equal_spacing_mm: float = 2.54,  # spacing (mm) in equal_two_sides mode
     ):
         at_x, at_y = float(object.at_xy[0]), float(object.at_xy[1])   # (at X Y) — sem rotação
         w, h       = float(object.size_wh[0]), float(object.size_wh[1])
@@ -205,23 +207,10 @@ class KiCadSchematic:
         props = object.properties or {}
         pins  = object.pins or []
 
-        # ---- Agrupa por lado (inclui bidirectional) ----
-        left_pins, right_pins = [], []
-        for p in pins:
-            t = p.get("type", "input")
-            if t in ("input", "power_in"):
-                left_pins.append(p)
-            elif t in ("output", "power_out"):
-                right_pins.append(p)
-            else:
-                (left_pins if p.get("side", "right") == "left" else right_pins).append(p)
-
-        # ---- Helpers de distribuição centralizada ----
+        # ---- Helper functions for pin placement based on type ----
         def _spread_ys(n: int) -> list:
             """
-            Distribui pinos centralizados:
-            - Divide a faixa útil em 'n' bins iguais
-            - Coloca cada pino no CENTRO de seu bin
+            Alocates n Ys equally spaced between top+margin and bottom-margin.
             """
             if n <= 0:
                 return []
@@ -233,7 +222,6 @@ class KiCadSchematic:
             return [first_center + i * bin_h for i in range(n)]
 
         def _resolve_y_for_group(group: list) -> list:
-            """Mistura Y explícito com Y automático centralizado + des-overlap e clamp."""
             autos = _spread_ys(sum(1 for p in group if "y" not in p))
             auto_it = iter(autos)
             ys = []
@@ -244,12 +232,13 @@ class KiCadSchematic:
             high = y_bot - pin_margin_mm
             if not ys:
                 return ys
+
             ys[0] = min(max(ys[0], low), high)
             for i in range(1, len(ys)):
                 target = max(ys[i], ys[i-1] + min_delta_mm)
                 ys[i] = min(target, high)
 
-            # Se acumulou no topo, recentra dentro do range possível
+            #if it overflows at bottom, shift up as much as possible
             if ys[-1] > high and len(ys) > 1:
                 overflow = ys[-1] - high
                 spread = ys[-1] - ys[0]
@@ -265,10 +254,66 @@ class KiCadSchematic:
 
             return ys
 
-        ys_left  = _resolve_y_for_group(left_pins)
-        ys_right = _resolve_y_for_group(right_pins)
+        # ---- Helper function for fixed spacing and centered (any type) ----
+        def _equal_spread_centered(n: int, step_mm: float) -> list:
+            """
+            Ys equally spaced by step_mm, centered vertically in the block.
+            If it doesn't fit, reduces step to fit.
+            """
+            if n <= 0:
+                return []
 
-        # ---- Monta o bloco (sheet ...) ----
+            low  = y_top + pin_margin_mm
+            high = y_bot - pin_margin_mm
+            usable_h = max(high - low, 0.1)
+
+            step = float(step_mm) if step_mm and step_mm > 0 else (usable_h / max(n, 1))
+            if n == 1:
+                y = at_y + h / 2.0
+                return [min(max(y, low), high)]
+
+            total = step * (n - 1)
+
+            # If it doesn't fit, compress step
+            if total > usable_h:
+                step = usable_h / (n - 1)
+                total = step * (n - 1)
+
+            y0 = (at_y + h / 2.0) - total / 2.0
+            ys = [y0 + i * step for i in range(n)]
+
+            ys = [min(max(y, low), high) for y in ys]
+            for i in range(1, n):
+                ys[i] = max(ys[i], ys[i-1] + min_delta_mm)
+                ys[i] = min(ys[i], high)
+
+            return ys
+
+        #   1) Chose pin distribution method
+        left_pins, right_pins = [], []
+
+        if equal_two_sides:
+            # Alternates pins left/right in order of definition
+            for i, p in enumerate(pins):
+                (left_pins if i % 2 == 0 else right_pins).append(p)
+
+            ys_left  = _equal_spread_centered(len(left_pins),  equal_spacing_mm)
+            ys_right = _equal_spread_centered(len(right_pins), equal_spacing_mm)
+        else:
+            # alternates by type
+            for p in pins:
+                t = p.get("type", "input")
+                if t in ("input", "power_in"):
+                    left_pins.append(p)
+                elif t in ("output", "power_out"):
+                    right_pins.append(p)
+                else:
+                    (left_pins if p.get("side", "right") == "left" else right_pins).append(p)
+
+            ys_left  = _resolve_y_for_group(left_pins)
+            ys_right = _resolve_y_for_group(right_pins)
+
+        #   2) Builds the block (sheet ...)
         sheet_uuid = str(uuid.uuid4())
         sheet = [
             Symbol("sheet"),
@@ -300,9 +345,9 @@ class KiCadSchematic:
             ],
         ]
 
-        # Propriedades extras
+        # Extra properties
         prop_id = 2
-        for k, v in (props.items()):
+        for k, v in props.items():
             sheet.append(
                 [Symbol("property"), f'"{k}"', f'"{v}"',
                 [Symbol("id"), prop_id],
@@ -314,8 +359,11 @@ class KiCadSchematic:
             )
             prop_id += 1
 
-        # ---- Pinos esquerda (ângulo 180) ----
-        left_pin_positions = []  # [(pin_dict, (x,y))]
+        #   3) Pins
+        left_pin_positions = []   # [(pin_dict, (x,y))]
+        right_pin_positions = []  # [(pin_dict, (x,y))]
+
+        # Left: angle 180
         for p, y in zip(left_pins, ys_left):
             name  = p.get("name", "IN")
             ptype = p.get("type", "input")
@@ -331,8 +379,7 @@ class KiCadSchematic:
             )
             left_pin_positions.append((p, (x_left, y)))
 
-        # ---- Pinos direita (ângulo 0) ----
-        right_pin_positions = []
+        # Right: angle 0
         for p, y in zip(right_pins, ys_right):
             name  = p.get("name", "OUT")
             ptype = p.get("type", "output")
@@ -350,23 +397,25 @@ class KiCadSchematic:
 
         # ---- Inserção do sheet ----
         insert_idx = len(self.data) - 1
-        if insert_idx < 0: insert_idx = 0
+        if insert_idx < 0:
+            insert_idx = 0
         self.data.insert(insert_idx, sheet)
 
-        # ---- sheet_instances ----
+        #   4) sheet_instances
         root_uuid = self._ensure_root_uuid()
         si = self._ensure_section("sheet_instances")
+
         has_root = any(
             isinstance(e, list) and e and e[0] == Symbol("path") and str(e[1]) == '"/"'
             for e in si[1:]
         )
         if not has_root:
             si.append([Symbol("path"), '"/"', [Symbol("page"), '"1"']])
-        si.append([Symbol("path"), f'"/{sheet_uuid}"', [Symbol("page"), f'"{page_for_instance}"']])
 
-        # =====================================================================
-        #   NET LABELS (opcionais): cria fios e labels para pinos com p["net"]
-        # =====================================================================
+        # Corrigido: path de folha filha deve incluir root_uuid
+        si.append([Symbol("path"), f'"/{root_uuid}/{sheet_uuid}"', [Symbol("page"), f'"{page_for_instance}"']])
+
+        #   5) NET LABELS (optional): create wires + labels for pin nets
         def _add_wire(x1, y1, x2, y2):
             self.data.append(
                 [Symbol("wire"),
@@ -376,7 +425,6 @@ class KiCadSchematic:
             )
 
         def _add_label(name, x, y, justify_sym):
-            # KiCad 9: justify deve estar dentro de (effects ...)
             self.data.append(
                 [Symbol("label"), f'"{name}"',
                 [Symbol("at"), x, y, 0],
@@ -386,9 +434,8 @@ class KiCadSchematic:
                 ],
                 [Symbol("uuid"), f'"{uuid.uuid4()}"']]
             )
-        
 
-        # Esquerda: fio vai para x_left - net_wire_len_mm, label no fim com justify right
+        # Left: wire goes to x_left - net_wire_len_mm, label at end with justify right
         for p, (px, py) in left_pin_positions:
             net = p.get("net")
             if not net:
@@ -398,7 +445,7 @@ class KiCadSchematic:
             _add_wire(px, py, x2, y2)
             _add_label(str(net), x2, y2, "right")
 
-        # Direita: fio vai para x_right + net_wire_len_mm, label no fim com justify left
+        # Right: wire goes to x_right + net_wire_len_mm, label at end with justify left
         for p, (px, py) in right_pin_positions:
             net = p.get("net")
             if not net:
@@ -408,26 +455,26 @@ class KiCadSchematic:
             _add_wire(px, py, x2, y2)
             _add_label(str(net), x2, y2, "left")
 
-        return {"sheet_uuid": sheet_uuid}
+        return {"sheet_uuid": sheet_uuid, "root_uuid": root_uuid}
+
 
     def add_hierarchical_sheets(
         self,
-        objects,                          # lista de HierarchicalObject (ou objs compatíveis)
-        origin_xy=(50.0, 50.0),           # canto superior-esquerdo inicial (mm)
-        flow="row",                       # por enquanto: "row" (quebra por largura)
-        max_row_width_mm=180.0,           # largura máxima da “linha” (mm) antes de quebrar
+        objects,                          # list of HierarchicalObjects
+        origin_xy=(50.0, 50.0),           # initial position (top-left) for placement
+        flow="row",                       # row for horizontal breaks, column for vertical breaks (not implemented)
+        max_row_width_mm=180.0,           # max width before line break (only for flow=row)
         h_gap_factor=0.5,                 # gap horizontal = max(h_gap_factor * w_obj, min_hgap)
         v_gap_factor=0.8,                 # gap vertical   = max(v_gap_factor * h_row, min_vgap)
-        min_hgap=4.0,                     # gaps mínimos (mm) para legibilidade
+        min_hgap=4.0,                     # minimum gaps (mm) para legibilidade
         min_vgap=6.0,
-        page_for_instance_start=2,        # numeração de páginas para sheet_instances
-        pin_margin_mm=2.0,                # repassa para add_hierarchical_sheet
-        min_delta_mm=1.0,                 # repassa para add_hierarchical_sheet
+        page_for_instance_start=2,        
+        pin_margin_mm=2.0,                # used on add_hierarchical_sheet
+        min_delta_mm=1.0,                 # used on add_hierarchical_sheet
     ):
         """
-        Adiciona vários hierarchical sheets e os distribui em linhas, com espaçamento
-        proporcional ao tamanho. Calcula e injeta at_xy automaticamente.
-        Retorna a lista de metadados [{object, sheet_uuid, at_xy, size_wh, page}, ...].
+        Adds several hierarchical sheets arranged automatically.
+        Returns metadata [{object, sheet_uuid, at_xy, size_wh, page}, ...].
         """
         placed = []
         cursor_x, cursor_y = float(origin_xy[0]), float(origin_xy[1])
@@ -435,31 +482,32 @@ class KiCadSchematic:
         row_left_edge = cursor_x
         page_num = int(page_for_instance_start)
 
-        def _hgap(w):  # gap proporcional à largura do bloco
+        def _hgap(w):  # gap proportional to object width
             #return max(h_gap_factor * float(w), float(min_hgap))
-            return 25
+            return 25 # constant value for better spacing
 
-        def _vgap(h):  # gap proporcional à maior altura da linha
+        def _vgap(h):  # gap proportional to row height
             #return max(v_gap_factor * float(h), float(min_vgap))
-            return 10
+            return 10 #constant value for better spacing
         for obj in objects:
             w = float(obj.size_wh[0])
             h = float(obj.size_wh[1])
 
-            # quebra de linha se exceder a largura máxima
+            # line break when exceeding max row width
             if flow == "row" and (cursor_x > row_left_edge) and (cursor_x + w > row_left_edge + float(max_row_width_mm)):
-                # próxima linha
+                # next line
                 cursor_x = row_left_edge
                 cursor_y = cursor_y + row_height + _vgap(row_height)
                 row_height = 0.0
 
-            # posiciona este bloco
+            # places block
             obj.at_xy = [cursor_x, cursor_y]
             meta = self.add_hierarchical_sheet(
                 object=obj,
                 page_for_instance=str(page_num),
                 pin_margin_mm=pin_margin_mm,
-                min_delta_mm=min_delta_mm
+                min_delta_mm=min_delta_mm,
+                equal_two_sides= True,
             )
             placed.append({
                 "object": obj,
@@ -469,7 +517,7 @@ class KiCadSchematic:
                 "page": page_num
             })
 
-            # avança cursor na linha
+            # fowards cursor
             cursor_x += w + _hgap(w)
             row_height = max(row_height, h)
             page_num += 1
