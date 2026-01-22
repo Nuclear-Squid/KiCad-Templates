@@ -73,3 +73,15 @@ class SCH_Templates:
             {"name": "TX", "type": "bidirectional", "net": "TX_MK"},
         ]
     )
+
+    I2C_PERIPHERALS = HierarchicalObject(
+        sheet_name = "I2C_Peripherals",
+        sheet_file="subsystems/i2c_peripherals.kicad_sch",
+        at_xy=[0,0],
+        size_wh=[30,20],
+        properties={"Comment": "I2C Peripherals"},
+        pins=[
+            {"name": "SDA", "type": "bidirectional", "net": "SDA"},
+            {"name": "SCL", "type": "bidirectional", "net": "SCL"},
+        ]
+    )
