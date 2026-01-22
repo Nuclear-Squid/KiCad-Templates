@@ -9,6 +9,7 @@
     devShells.x86_64-linux.default = pkgs.mkShell {
       buildInputs = with pkgs; [
         (python3.withPackages (py-pkgs: with py-pkgs; [ uv ]))
+        kicad
       ];
 
       shellHook = "source .venv/bin/activate";
