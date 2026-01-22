@@ -85,3 +85,47 @@ class SCH_Templates:
             {"name": "SCL", "type": "bidirectional", "net": "SCL"},
         ]
     )
+
+    ADC_ADS1115 = HierarchicalObject(
+        sheet_name = "ADC_ADS1115",
+        sheet_file="subsystems/adc_ads1115.kicad_sch",
+        at_xy=[0,0],
+        size_wh=[30,20],
+        properties={"Comment": "ADC ADS1115"},
+        pins=[
+            {"name": "SDA", "type": "bidirectional", "net": "SDA"},
+            {"name": "SCL", "type": "bidirectional", "net": "SCL"},
+        ]
+    )
+
+    MIKROBUS_HOST_CONNECTOR = HierarchicalObject(
+        sheet_name = "MIKROBUS HOST CONNECTOR",
+        sheet_file="subsystems/mkb_host_conn.kicad_sch",
+        at_xy=[0,0],
+        size_wh=[30,20],
+        properties={"Comment": "MikroBUS Interface"},
+        pins=[
+            {"name": "SDA", "type": "bidirectional", "net": "SDA"},
+            {"name": "SCL", "type": "bidirectional", "net": "SCL"},
+            {"name": "INT", "type": "input", "net": "INT_MK"},
+            {"name": "RESET", "type": "input", "net": "RESET_MK"},
+            {"name": "CS", "type": "bidirectional", "net": "CS_MK"},
+            {"name": "SCK", "type": "bidirectional", "net": "SCK"},
+            {"name": "MOSI", "type": "bidirectional", "net": "MOSI"},
+            {"name": "MISO", "type": "bidirectional", "net": "MISO"},
+            {"name": "PWM", "type": "bidirectional", "net": "PWM_MK"},
+            {"name": "RX", "type": "bidirectional", "net": "RX_MK"},
+            {"name": "TX", "type": "bidirectional", "net": "TX_MK"},
+        ]
+    )  
+
+    BUZZER = HierarchicalObject(
+        sheet_name = "BUZZER",
+        sheet_file="subsystems/buzzer.kicad_sch",
+        at_xy=[0,0],
+        size_wh=[30,20],
+        properties={"Comment": "Buzzer"},
+        pins=[
+            {"name": "BUZZER_PIN", "type": "input", "net": "BUZZER"},
+        ]
+    )
