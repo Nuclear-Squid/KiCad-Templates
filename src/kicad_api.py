@@ -1,11 +1,18 @@
 from sexpdata import loads, dumps, Symbol
 from typing import Dict, List, Optional, Union
+from shutil import copy
+from pathlib import Path
 import os
 import glob
 import uuid
 
+
 from project_builder import project_builder
 from hierarchical_object import HierarchicalObject  # Ajoute cette ligne
+
+
+PROJECT_FOLDER = Path(__file__).parent.parent
+
 
 
 def _format_sexp_kicad(data, indent=0) -> str:
@@ -937,6 +944,8 @@ class KiCadAPI:
 
     def project_creation(self, project_name: str) -> KiCadSchematic:
         project_builder(project_name)
+        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'fp-lib-table', PROJECT_FOLDER / project_name / 'fp-lib-table')
+        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'sym-lib-table', PROJECT_FOLDER / project_name / 'sym-lib-table')
         self.schematic = KiCadSchematic(f'{project_name}/{project_name}.kicad_sch')
         return self.schematic
 

@@ -1,5 +1,9 @@
 from os import mkdir
 from uuid import uuid4
+from pathlib import Path
+
+PROJECT_FOLDER = Path(__file__).parent.parent
+
 
 base_pcb_text = '''(kicad_pcb (version 20241229) (generator "pcbnew") (generator_version "9.0")
 )'''
@@ -55,13 +59,13 @@ base_pro_text = '''{
 
 
 def project_builder(project_name):
-    mkdir(project_name)
+    mkdir(PROJECT_FOLDER / project_name)
 
-    f_proj = open(f"{project_name}/{project_name}.kicad_pro", "x")
+    f_proj = open(PROJECT_FOLDER / project_name / f"{project_name}.kicad_pro", "x")
     f_proj.write(f'''{base_pro_text}''')
 
-    f_proj = open(f"{project_name}/{project_name}.kicad_sch", "x")
+    f_proj = open(PROJECT_FOLDER / project_name / f"{project_name}.kicad_sch", "x")
     f_proj.write(f'''{base_sch_text}''')
 
-    f_proj = open(f"{project_name}/{project_name}.kicad_pcb", "x")
+    f_proj = open(PROJECT_FOLDER / project_name / f"{project_name}.kicad_pcb", "x")
     f_proj.write(f'''{base_pcb_text}''')
