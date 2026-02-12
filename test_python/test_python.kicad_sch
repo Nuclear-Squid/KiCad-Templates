@@ -1,0 +1,934 @@
+(kicad_sch
+	(version 20250114)
+	(generator "eeschema")
+	(generator_version "9.0")
+	(uuid 2c09d13d-9972-4de0-abe4-6fd8793e9351)
+	(paper "A4")
+	(lib_symbols)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+		(path "/"
+			(page "1")
+		)
+		(path "/2c09d13d-9972-4de0-abe4-6fd8793e9351/b6b69bf0-c1ad-4721-965c-d396175e0ed7"
+			(page "10")
+		)
+		(path "/2c09d13d-9972-4de0-abe4-6fd8793e9351/f70ab952-6f26-492e-9544-f5dc87465e01"
+			(page "11")
+		)
+		(path "/2c09d13d-9972-4de0-abe4-6fd8793e9351/1a8ed0d7-edef-4b67-903b-2a249bed841b"
+			(page "12")
+		)
+		(path "/2c09d13d-9972-4de0-abe4-6fd8793e9351/b99bf0f5-8139-45a3-9156-645608f56dd1"
+			(page "13")
+		)
+		(path "/2c09d13d-9972-4de0-abe4-6fd8793e9351/39197ccd-130b-4b13-8849-3ab9acc3cbef"
+			(page "14")
+		)
+	)
+	(sheet
+		(at 33.0 20.0)
+		(size 30.0 20.0)
+		(fields_autoplaced)
+		(stroke
+			(width 0.1524)
+			(type solid)
+			(color 0 0 0 0)
+		)
+		(fill
+			(color 0 0 0 0.0)
+		)
+		(uuid "b6b69bf0-c1ad-4721-965c-d396175e0ed7")
+		(property "Sheet name" "CANBuffer"
+			(id 0)
+			(at 35.0 18.0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Sheet file" "subsystems/can_buffer.kicad_sch"
+			(id 1)
+			(at 35.0 22.0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Comment" "CAN Buffer"
+			(id 2)
+			(at 33.0 20.0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "CAN_H" bidirectional
+			(at 33.0 28.73 180.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "d341b20c-d116-4caa-9304-131e4c3c622c")
+		)
+		(pin "CAN_TX" bidirectional
+			(at 33.0 31.27 180.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "23a8aceb-01eb-48e0-ad3c-e6a57a90bfe7")
+		)
+		(pin "CAN_L" bidirectional
+			(at 63.0 28.73 0.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "411372b6-0d54-41c7-8841-3877b9cdfba6")
+		)
+		(pin "CAN_RX" bidirectional
+			(at 63.0 31.27 0.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "b2a77c72-f5a4-4b15-9476-94e322102757")
+		)
+	)
+	(embedded_fonts no)
+	(wire
+		(pts
+			(xy 33.0 28.73)
+			(xy 28.0 28.73)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9f1ce890-787b-4143-9c6d-cc10fb08c27a")
+	)
+	(label "CAN_H"
+		(at 28.0 28.73 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "8931ec1a-b12e-4914-92b6-5796968b60f2")
+	)
+	(wire
+		(pts
+			(xy 33.0 31.27)
+			(xy 28.0 31.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "47f2c329-5b69-413f-932b-664b880b09ec")
+	)
+	(label "CAN_TX"
+		(at 28.0 31.27 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "dafc67f8-178a-4419-b42e-d375d4cf12c6")
+	)
+	(wire
+		(pts
+			(xy 63.0 28.73)
+			(xy 68.0 28.73)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "972da712-f515-4697-8d26-a0650548b13d")
+	)
+	(label "CAN_L"
+		(at 68.0 28.73 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "874cb709-22a8-472d-ac77-0c0dbb5031ec")
+	)
+	(wire
+		(pts
+			(xy 63.0 31.27)
+			(xy 68.0 31.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f943d0c6-9f78-475b-a5a6-847ae69aceb8")
+	)
+	(sheet
+		(at 88.0 20.0)
+		(size 30.0 20.0)
+		(fields_autoplaced)
+		(stroke
+			(width 0.1524)
+			(type solid)
+			(color 0 0 0 0)
+		)
+		(fill
+			(color 0 0 0 0.0)
+		)
+		(uuid "f70ab952-6f26-492e-9544-f5dc87465e01")
+		(property "Sheet name" "TempSensor"
+			(id 0)
+			(at 90.0 18.0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Sheet file" "subsystems/capt_temp.kicad_sch"
+			(id 1)
+			(at 90.0 22.0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Comment" "Temperature Sensor"
+			(id 2)
+			(at 88.0 20.0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "SDA" bidirectional
+			(at 88.0 30.0 180.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "79fcfe67-ff69-42bd-9573-ae10cc73aed5")
+		)
+		(pin "SCL" bidirectional
+			(at 118.0 30.0 0.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "e09c5d36-b0aa-4277-86e8-b41ccd4c40d6")
+		)
+	)
+	(label "CAN_RX"
+		(at 68.0 31.27 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "a01a112f-11b5-465e-9784-f08c4ddc68e1")
+	)
+	(wire
+		(pts
+			(xy 88.0 30.0)
+			(xy 83.0 30.0)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "92244b08-eeae-4574-8364-606b09d47071")
+	)
+	(label "SDA"
+		(at 83.0 30.0 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "5b3404bc-9b0d-4656-b4a3-e7eaec153e2c")
+	)
+	(wire
+		(pts
+			(xy 118.0 30.0)
+			(xy 123.0 30.0)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a9662912-12c1-48dc-83bf-a7908ebe33a3")
+	)
+	(sheet
+		(at 143.0 20.0)
+		(size 30.0 20.0)
+		(fields_autoplaced)
+		(stroke
+			(width 0.1524)
+			(type solid)
+			(color 0 0 0 0)
+		)
+		(fill
+			(color 0 0 0 0.0)
+		)
+		(uuid "1a8ed0d7-edef-4b67-903b-2a249bed841b")
+		(property "Sheet name" "BME680"
+			(id 0)
+			(at 145.0 18.0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Sheet file" "subsystems/s_bme680.kicad_sch"
+			(id 1)
+			(at 145.0 22.0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Comment" "Temperature Sensor"
+			(id 2)
+			(at 143.0 20.0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "SDA" bidirectional
+			(at 143.0 30.0 180.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "b55bf74d-923f-4986-9439-80a19e30f98f")
+		)
+		(pin "SCL" bidirectional
+			(at 173.0 30.0 0.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "b3d53fb2-0bf6-4df5-8b5a-7b31b9d9ba53")
+		)
+	)
+	(label "SCL"
+		(at 123.0 30.0 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "4ba35cb5-1b8a-48f4-b4ef-618bb6bccf40")
+	)
+	(wire
+		(pts
+			(xy 143.0 30.0)
+			(xy 138.0 30.0)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "53708b0f-847d-4193-be82-2fd62bc9c320")
+	)
+	(label "SDA"
+		(at 138.0 30.0 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "361ad874-14eb-42d3-b91f-fd9d44f81ef7")
+	)
+	(wire
+		(pts
+			(xy 173.0 30.0)
+			(xy 178.0 30.0)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "20a66931-85a3-4805-95e3-bbaee8390e10")
+	)
+	(sheet
+		(at 198.0 20.0)
+		(size 30.0 20.0)
+		(fields_autoplaced)
+		(stroke
+			(width 0.1524)
+			(type solid)
+			(color 0 0 0 0)
+		)
+		(fill
+			(color 0 0 0 0.0)
+		)
+		(uuid "b99bf0f5-8139-45a3-9156-645608f56dd1")
+		(property "Sheet name" "ACC_MAG"
+			(id 0)
+			(at 200.0 18.0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Sheet file" "subsystems/acc_mag.kicad_sch"
+			(id 1)
+			(at 200.0 22.0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Comment" "Accelerometer and Magnetometer"
+			(id 2)
+			(at 198.0 20.0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "SDA" bidirectional
+			(at 198.0 28.73 180.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "0087d3cb-f151-4169-9a3f-3926f96857a5")
+		)
+		(pin "INT_MAG" input
+			(at 198.0 31.27 180.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "19d186ad-722e-442b-9fdf-6841d568fd8a")
+		)
+		(pin "SCL" bidirectional
+			(at 228.0 30.0 0.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "50d2532c-d460-4d9b-9353-9c7168890025")
+		)
+	)
+	(label "SCL"
+		(at 178.0 30.0 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "94d577e4-e534-46ac-a69d-3622c05b998a")
+	)
+	(wire
+		(pts
+			(xy 198.0 28.73)
+			(xy 193.0 28.73)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7bb05dbb-529a-42da-8684-33011eb5d5cc")
+	)
+	(label "SDA"
+		(at 193.0 28.73 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "6c3548b4-fe98-46e1-9d74-bb5d1dfd0cbe")
+	)
+	(wire
+		(pts
+			(xy 198.0 31.27)
+			(xy 193.0 31.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a35674e1-e095-46f7-9575-dbcda23b2dec")
+	)
+	(label "INT_MAG"
+		(at 193.0 31.27 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "403773ce-e719-456e-871a-818b26ab8727")
+	)
+	(wire
+		(pts
+			(xy 228.0 30.0)
+			(xy 233.0 30.0)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8555dbb2-5e4b-4146-9f0f-f6d0b78d4c41")
+	)
+	(sheet
+		(at 33.0 50.0)
+		(size 30.0 20.0)
+		(fields_autoplaced)
+		(stroke
+			(width 0.1524)
+			(type solid)
+			(color 0 0 0 0)
+		)
+		(fill
+			(color 0 0 0 0.0)
+		)
+		(uuid "39197ccd-130b-4b13-8849-3ab9acc3cbef")
+		(property "Sheet name" "MIKROBUS"
+			(id 0)
+			(at 35.0 48.0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Sheet file" "subsystems/mikrobus.kicad_sch"
+			(id 1)
+			(at 35.0 52.0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Comment" "MikroBUS Interface"
+			(id 2)
+			(at 33.0 50.0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "SDA" bidirectional
+			(at 33.0 53.65 180.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "d51348ef-9134-4522-be76-4f6c378a52c4")
+		)
+		(pin "INT" input
+			(at 33.0 56.19 180.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "07d5c173-abde-47bf-a4e4-355d5fcf01ed")
+		)
+		(pin "CS" bidirectional
+			(at 33.0 58.73 180.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "76ccac0b-01ef-4d1b-b3ab-536d7f803918")
+		)
+		(pin "MOSI" bidirectional
+			(at 33.0 61.269999999999996 180.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "c96bd62f-04ae-4b17-bbf8-ed18d1d65416")
+		)
+		(pin "PWM" bidirectional
+			(at 33.0 63.81 180.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "92865d92-6dc5-4fd4-a1d6-714420b7af52")
+		)
+		(pin "TX" bidirectional
+			(at 33.0 66.35 180.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "219c3339-d98a-4352-b4a6-ea0013f2b23f")
+		)
+		(pin "SCL" bidirectional
+			(at 63.0 54.92 0.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "19a00161-eff4-459e-a50b-6d8412467dde")
+		)
+		(pin "RESET" input
+			(at 63.0 57.46 0.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "aa50ef37-0595-4bc4-a1c1-6b32233f40ae")
+		)
+		(pin "SCK" bidirectional
+			(at 63.0 60.0 0.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "18251def-0bfd-45a9-b553-c05a84bedfb8")
+		)
+		(pin "MISO" bidirectional
+			(at 63.0 62.54 0.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "af4090aa-1d59-437e-8083-ed53ff337317")
+		)
+		(pin "RX" bidirectional
+			(at 63.0 65.08 0.0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "e51e040e-bd60-4f8a-a96e-d6af4bdddb18")
+		)
+	)
+	(label "SCL"
+		(at 233.0 30.0 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "8c260206-e9e2-4812-ad64-93e7609f8cf0")
+	)
+	(wire
+		(pts
+			(xy 33.0 53.65)
+			(xy 28.0 53.65)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3b622daf-cd06-4539-ad1f-494a83b1c2d7")
+	)
+	(label "SDA"
+		(at 28.0 53.65 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "d80242c8-c592-4987-a65d-2b0b30d090f3")
+	)
+	(wire
+		(pts
+			(xy 33.0 56.19)
+			(xy 28.0 56.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "52137b56-40cb-44aa-af6a-d19c9f9844e4")
+	)
+	(label "INT_MK"
+		(at 28.0 56.19 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "d1382785-a5de-4b75-aeff-0d5918c1ea6e")
+	)
+	(wire
+		(pts
+			(xy 33.0 58.73)
+			(xy 28.0 58.73)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a749f28a-e503-4ce8-8e54-9e38377e9c20")
+	)
+	(label "CS_MK"
+		(at 28.0 58.73 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "a45cd61c-875d-4cc6-a326-2f9b51245dbb")
+	)
+	(wire
+		(pts
+			(xy 33.0 61.269999999999996)
+			(xy 28.0 61.269999999999996)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6f3a137f-9969-40c0-911b-6a9913c15ba0")
+	)
+	(label "MOSI"
+		(at 28.0 61.269999999999996 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "09272297-d220-4a0f-8805-875eb62f9238")
+	)
+	(wire
+		(pts
+			(xy 33.0 63.81)
+			(xy 28.0 63.81)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b5a34f5d-ec6b-4f03-a96f-e8e41dbbadaa")
+	)
+	(label "PWM_MK"
+		(at 28.0 63.81 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "83b8dc6e-674b-4cac-95f4-1be22d4b2fd3")
+	)
+	(wire
+		(pts
+			(xy 33.0 66.35)
+			(xy 28.0 66.35)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3819f715-9a4a-4c0f-a55e-d7d8d4e7fa85")
+	)
+	(label "TX_MK"
+		(at 28.0 66.35 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "4b4fd03a-7483-4a51-8ec2-dea10a6b0566")
+	)
+	(wire
+		(pts
+			(xy 63.0 54.92)
+			(xy 68.0 54.92)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c3511a6c-3c63-4d63-9054-ed712c580a4f")
+	)
+	(label "SCL"
+		(at 68.0 54.92 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "b5dafded-dc15-40d2-afdc-12c81bdf09ea")
+	)
+	(wire
+		(pts
+			(xy 63.0 57.46)
+			(xy 68.0 57.46)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b4809b1e-bb2d-498f-83f6-45bbfe4ece8e")
+	)
+	(label "RESET_MK"
+		(at 68.0 57.46 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "7248de3d-4cea-4a47-bc30-d43020075f26")
+	)
+	(wire
+		(pts
+			(xy 63.0 60.0)
+			(xy 68.0 60.0)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2600064f-1ceb-460a-921d-349f76382a7f")
+	)
+	(label "SCK"
+		(at 68.0 60.0 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "06c7e991-8ac1-4dbf-bcd7-60c294f83a88")
+	)
+	(wire
+		(pts
+			(xy 63.0 62.54)
+			(xy 68.0 62.54)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0ef26c82-a466-4355-9033-ff1c46edcbf5")
+	)
+	(label "MISO"
+		(at 68.0 62.54 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "b2b4b5f6-1aa9-44dc-827f-2a694c6e2298")
+	)
+	(wire
+		(pts
+			(xy 63.0 65.08)
+			(xy 68.0 65.08)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d9f5948e-cdc3-4138-b275-bdbec57f2849")
+	)
+	(label "RX_MK"
+		(at 68.0 65.08 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "2d3c383e-30cc-4982-bdc4-d252d478594a")
+	)
+)

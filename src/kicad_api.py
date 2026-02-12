@@ -4,6 +4,7 @@ import os
 import glob
 import uuid
 
+from project_builder import project_builder
 from hierarchical_object import HierarchicalObject  # Ajoute cette ligne
 
 
@@ -933,6 +934,11 @@ class KiCadAPI:
     def __init__(self):
         self.schematic = None
         self.pcb = None
+
+    def project_creation(self, project_name: str) -> KiCadSchematic:
+        project_builder(project_name)
+        self.schematic = KiCadSchematic(f'{project_name}/{project_name}.kicad_sch')
+        return self.schematic
 
     def load_schematic(self, file_path: str) -> KiCadSchematic:
         """Charge un fichier schématique."""

@@ -1,16 +1,21 @@
 from kicad_api import KiCadAPI, KiCadLibrary
 from hierarchical_object import HierarchicalObject
 from templates import SCH_Templates
+from project_builder import project_builder
 
 # Initialiser l'API
 api = KiCadAPI()
 lib = KiCadLibrary()
 
+
+#project_builder('test_python')
+
+
 # Charger un schématique
-schematic = api.load_schematic("test_python.kicad_sch")
+#schematic = api.load_schematic("test_python/test_python.kicad_sch")
+schematic = api.project_creation('test_python')
 
-
-device_lib_path = "/usr/share/kicad/symbols/Device.kicad_sym"  # Change it somehow
+#device_lib_path = "/usr/share/kicad/symbols/Device.kicad_sym"  # Change it somehow
 
 # Protoseed implementation
 blocks = [SCH_Templates.CAN_BUFFER, SCH_Templates.CAPT_TEMP, SCH_Templates.BME680, SCH_Templates.ACC_MAG, SCH_Templates.MIKROBUS,]
@@ -30,6 +35,6 @@ for p in placed:
     print(p)
 
 
-schematic.export_schematic("test_python.kicad_sch")
+schematic.export_schematic("test_python/test_python.kicad_sch")
 
-print("File generated: test_python.kicad_sch")
+print("File generated: test_python/test_python.kicad_sch")
