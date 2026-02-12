@@ -468,7 +468,7 @@ class KiCadSchematic:
         v_gap_factor=0.8,                 # gap vertical   = max(v_gap_factor * h_row, min_vgap)
         min_hgap=4.0,                     # minimum gaps (mm) para legibilidade
         min_vgap=6.0,
-        page_for_instance_start=2,        
+        page_for_instance_start=2,
         pin_margin_mm=2.0,                # used on add_hierarchical_sheet
         min_delta_mm=1.0,                 # used on add_hierarchical_sheet
     ):
