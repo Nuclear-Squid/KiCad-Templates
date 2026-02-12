@@ -2,7 +2,7 @@
 	(version 20250114)
 	(generator "eeschema")
 	(generator_version "9.0")
-	(uuid 2c09d13d-9972-4de0-abe4-6fd8793e9351)
+	(uuid 559e48a7-a1f9-415e-9662-ee0ebb041bbb)
 	(paper "A4")
 	(lib_symbols)
 	(sheet_instances
@@ -12,19 +12,19 @@
 		(path "/"
 			(page "1")
 		)
-		(path "/2c09d13d-9972-4de0-abe4-6fd8793e9351/b6b69bf0-c1ad-4721-965c-d396175e0ed7"
+		(path "/559e48a7-a1f9-415e-9662-ee0ebb041bbb/9aed7e67-c8e7-4287-9857-38bf00bbe72d"
 			(page "10")
 		)
-		(path "/2c09d13d-9972-4de0-abe4-6fd8793e9351/f70ab952-6f26-492e-9544-f5dc87465e01"
+		(path "/559e48a7-a1f9-415e-9662-ee0ebb041bbb/02977b61-d9d4-405b-8b8b-2404b8a6a742"
 			(page "11")
 		)
-		(path "/2c09d13d-9972-4de0-abe4-6fd8793e9351/1a8ed0d7-edef-4b67-903b-2a249bed841b"
+		(path "/559e48a7-a1f9-415e-9662-ee0ebb041bbb/def403a9-2d83-4cd6-a1f2-d73e6827583f"
 			(page "12")
 		)
-		(path "/2c09d13d-9972-4de0-abe4-6fd8793e9351/b99bf0f5-8139-45a3-9156-645608f56dd1"
+		(path "/559e48a7-a1f9-415e-9662-ee0ebb041bbb/3dd0f1d1-6281-4e1a-8aa4-77b803288efb"
 			(page "13")
 		)
-		(path "/2c09d13d-9972-4de0-abe4-6fd8793e9351/39197ccd-130b-4b13-8849-3ab9acc3cbef"
+		(path "/559e48a7-a1f9-415e-9662-ee0ebb041bbb/1131e57b-858f-4bd5-acaf-fcc7c3bffaff"
 			(page "14")
 		)
 	)
@@ -40,7 +40,7 @@
 		(fill
 			(color 0 0 0 0.0)
 		)
-		(uuid "b6b69bf0-c1ad-4721-965c-d396175e0ed7")
+		(uuid "9aed7e67-c8e7-4287-9857-38bf00bbe72d")
 		(property "Sheet name" "CANBuffer"
 			(id 0)
 			(at 35.0 18.0 0)
@@ -51,7 +51,7 @@
 				(justify left)
 			)
 		)
-		(property "Sheet file" "subsystems/can_buffer.kicad_sch"
+		(property "Sheet file" "/home/givaldo/Documents/repos/KiCad-Templates/subsystems/can_buffer.kicad_sch"
 			(id 1)
 			(at 35.0 22.0 0)
 			(effects
@@ -79,7 +79,7 @@
 				)
 				(justify left)
 			)
-			(uuid "d341b20c-d116-4caa-9304-131e4c3c622c")
+			(uuid "a3149e17-0293-43c8-8f33-18fc49724cd4")
 		)
 		(pin "CAN_TX" bidirectional
 			(at 33.0 31.27 180.0)
@@ -89,7 +89,7 @@
 				)
 				(justify left)
 			)
-			(uuid "23a8aceb-01eb-48e0-ad3c-e6a57a90bfe7")
+			(uuid "f12eb4aa-27d0-46db-a95f-aec6ce976426")
 		)
 		(pin "CAN_L" bidirectional
 			(at 63.0 28.73 0.0)
@@ -99,7 +99,7 @@
 				)
 				(justify right)
 			)
-			(uuid "411372b6-0d54-41c7-8841-3877b9cdfba6")
+			(uuid "1144de34-e935-4ebc-8941-df94a6476c54")
 		)
 		(pin "CAN_RX" bidirectional
 			(at 63.0 31.27 0.0)
@@ -109,7 +109,7 @@
 				)
 				(justify right)
 			)
-			(uuid "b2a77c72-f5a4-4b15-9476-94e322102757")
+			(uuid "394e02ff-b580-4c35-b3ca-95e26db61ee2")
 		)
 	)
 	(embedded_fonts no)
@@ -122,7 +122,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "9f1ce890-787b-4143-9c6d-cc10fb08c27a")
+		(uuid "aecd0c22-a982-4600-aa94-438073703c1b")
 	)
 	(label "CAN_H"
 		(at 28.0 28.73 0)
@@ -132,7 +132,7 @@
 			)
 			(justify right)
 		)
-		(uuid "8931ec1a-b12e-4914-92b6-5796968b60f2")
+		(uuid "2eeed75c-c79a-4354-9315-d02238264fd1")
 	)
 	(wire
 		(pts
@@ -143,7 +143,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "47f2c329-5b69-413f-932b-664b880b09ec")
+		(uuid "d2b80f69-9549-4de9-85bb-e2111eeb1666")
 	)
 	(label "CAN_TX"
 		(at 28.0 31.27 0)
@@ -153,7 +153,7 @@
 			)
 			(justify right)
 		)
-		(uuid "dafc67f8-178a-4419-b42e-d375d4cf12c6")
+		(uuid "e63b109c-5344-4feb-a20b-7c9164d71fe5")
 	)
 	(wire
 		(pts
@@ -164,7 +164,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "972da712-f515-4697-8d26-a0650548b13d")
+		(uuid "c9d91046-d594-4a70-b681-a8c9c23ae7ba")
 	)
 	(label "CAN_L"
 		(at 68.0 28.73 0)
@@ -174,7 +174,7 @@
 			)
 			(justify left)
 		)
-		(uuid "874cb709-22a8-472d-ac77-0c0dbb5031ec")
+		(uuid "08e7c0ae-3301-489c-9f82-0bd4f4e90a87")
 	)
 	(wire
 		(pts
@@ -185,7 +185,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "f943d0c6-9f78-475b-a5a6-847ae69aceb8")
+		(uuid "1f875899-5a65-4e6a-8e22-3af32366e7ac")
 	)
 	(sheet
 		(at 88.0 20.0)
@@ -199,7 +199,7 @@
 		(fill
 			(color 0 0 0 0.0)
 		)
-		(uuid "f70ab952-6f26-492e-9544-f5dc87465e01")
+		(uuid "02977b61-d9d4-405b-8b8b-2404b8a6a742")
 		(property "Sheet name" "TempSensor"
 			(id 0)
 			(at 90.0 18.0 0)
@@ -210,7 +210,7 @@
 				(justify left)
 			)
 		)
-		(property "Sheet file" "subsystems/capt_temp.kicad_sch"
+		(property "Sheet file" "/home/givaldo/Documents/repos/KiCad-Templates/subsystems/capt_temp.kicad_sch"
 			(id 1)
 			(at 90.0 22.0 0)
 			(effects
@@ -238,7 +238,7 @@
 				)
 				(justify left)
 			)
-			(uuid "79fcfe67-ff69-42bd-9573-ae10cc73aed5")
+			(uuid "5e702b64-249d-4d6b-9d3f-106c4b70f4bc")
 		)
 		(pin "SCL" bidirectional
 			(at 118.0 30.0 0.0)
@@ -248,7 +248,7 @@
 				)
 				(justify right)
 			)
-			(uuid "e09c5d36-b0aa-4277-86e8-b41ccd4c40d6")
+			(uuid "6d5d16d9-63b4-47e0-b899-52927aaefd5e")
 		)
 	)
 	(label "CAN_RX"
@@ -259,7 +259,7 @@
 			)
 			(justify left)
 		)
-		(uuid "a01a112f-11b5-465e-9784-f08c4ddc68e1")
+		(uuid "9632d610-9722-42e4-98c2-c7fdec79ca2a")
 	)
 	(wire
 		(pts
@@ -270,7 +270,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "92244b08-eeae-4574-8364-606b09d47071")
+		(uuid "6a044a8c-5fda-4c0e-b2f3-53ded86365ec")
 	)
 	(label "SDA"
 		(at 83.0 30.0 0)
@@ -280,7 +280,7 @@
 			)
 			(justify right)
 		)
-		(uuid "5b3404bc-9b0d-4656-b4a3-e7eaec153e2c")
+		(uuid "d0088457-4612-4ec8-8a68-7bdb3b50140c")
 	)
 	(wire
 		(pts
@@ -291,7 +291,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "a9662912-12c1-48dc-83bf-a7908ebe33a3")
+		(uuid "b96378db-7e7f-46d5-925d-c95bad976971")
 	)
 	(sheet
 		(at 143.0 20.0)
@@ -305,7 +305,7 @@
 		(fill
 			(color 0 0 0 0.0)
 		)
-		(uuid "1a8ed0d7-edef-4b67-903b-2a249bed841b")
+		(uuid "def403a9-2d83-4cd6-a1f2-d73e6827583f")
 		(property "Sheet name" "BME680"
 			(id 0)
 			(at 145.0 18.0 0)
@@ -316,7 +316,7 @@
 				(justify left)
 			)
 		)
-		(property "Sheet file" "subsystems/s_bme680.kicad_sch"
+		(property "Sheet file" "/home/givaldo/Documents/repos/KiCad-Templates/subsystems/s_bme680.kicad_sch"
 			(id 1)
 			(at 145.0 22.0 0)
 			(effects
@@ -344,7 +344,7 @@
 				)
 				(justify left)
 			)
-			(uuid "b55bf74d-923f-4986-9439-80a19e30f98f")
+			(uuid "0209d865-d08b-49b0-89e3-99c888898e03")
 		)
 		(pin "SCL" bidirectional
 			(at 173.0 30.0 0.0)
@@ -354,7 +354,7 @@
 				)
 				(justify right)
 			)
-			(uuid "b3d53fb2-0bf6-4df5-8b5a-7b31b9d9ba53")
+			(uuid "821dcf85-0842-435f-8d9e-b5307a6127ca")
 		)
 	)
 	(label "SCL"
@@ -365,7 +365,7 @@
 			)
 			(justify left)
 		)
-		(uuid "4ba35cb5-1b8a-48f4-b4ef-618bb6bccf40")
+		(uuid "542a73d5-8d68-4e9c-b8f4-b8ff0de2bdf2")
 	)
 	(wire
 		(pts
@@ -376,7 +376,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "53708b0f-847d-4193-be82-2fd62bc9c320")
+		(uuid "df3171c9-cbbc-4e47-84e2-26dc971362ee")
 	)
 	(label "SDA"
 		(at 138.0 30.0 0)
@@ -386,7 +386,7 @@
 			)
 			(justify right)
 		)
-		(uuid "361ad874-14eb-42d3-b91f-fd9d44f81ef7")
+		(uuid "4ef0b641-e578-4a00-b625-8cf4fdf308ec")
 	)
 	(wire
 		(pts
@@ -397,7 +397,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "20a66931-85a3-4805-95e3-bbaee8390e10")
+		(uuid "80f84dd3-8400-4549-b43b-0ac6387cd4ad")
 	)
 	(sheet
 		(at 198.0 20.0)
@@ -411,7 +411,7 @@
 		(fill
 			(color 0 0 0 0.0)
 		)
-		(uuid "b99bf0f5-8139-45a3-9156-645608f56dd1")
+		(uuid "3dd0f1d1-6281-4e1a-8aa4-77b803288efb")
 		(property "Sheet name" "ACC_MAG"
 			(id 0)
 			(at 200.0 18.0 0)
@@ -422,7 +422,7 @@
 				(justify left)
 			)
 		)
-		(property "Sheet file" "subsystems/acc_mag.kicad_sch"
+		(property "Sheet file" "/home/givaldo/Documents/repos/KiCad-Templates/subsystems/acc_mag.kicad_sch"
 			(id 1)
 			(at 200.0 22.0 0)
 			(effects
@@ -450,7 +450,7 @@
 				)
 				(justify left)
 			)
-			(uuid "0087d3cb-f151-4169-9a3f-3926f96857a5")
+			(uuid "ffcf60ad-00ad-4791-bfe9-621206dc518d")
 		)
 		(pin "INT_MAG" input
 			(at 198.0 31.27 180.0)
@@ -460,7 +460,7 @@
 				)
 				(justify left)
 			)
-			(uuid "19d186ad-722e-442b-9fdf-6841d568fd8a")
+			(uuid "9779e934-717d-469d-ae74-bb0f649d85cc")
 		)
 		(pin "SCL" bidirectional
 			(at 228.0 30.0 0.0)
@@ -470,7 +470,7 @@
 				)
 				(justify right)
 			)
-			(uuid "50d2532c-d460-4d9b-9353-9c7168890025")
+			(uuid "a4978c89-cb77-4a54-adb0-63738c1eda11")
 		)
 	)
 	(label "SCL"
@@ -481,7 +481,7 @@
 			)
 			(justify left)
 		)
-		(uuid "94d577e4-e534-46ac-a69d-3622c05b998a")
+		(uuid "e278d6f9-783a-4bf7-838e-dd7025fd4447")
 	)
 	(wire
 		(pts
@@ -492,7 +492,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "7bb05dbb-529a-42da-8684-33011eb5d5cc")
+		(uuid "c17d5907-c281-47e3-8a23-37d0c7ba46da")
 	)
 	(label "SDA"
 		(at 193.0 28.73 0)
@@ -502,7 +502,7 @@
 			)
 			(justify right)
 		)
-		(uuid "6c3548b4-fe98-46e1-9d74-bb5d1dfd0cbe")
+		(uuid "d852bf7f-2f33-4482-9458-a0501904bbbb")
 	)
 	(wire
 		(pts
@@ -513,7 +513,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "a35674e1-e095-46f7-9575-dbcda23b2dec")
+		(uuid "ec231b3e-0869-4668-8ed0-87808ccef9df")
 	)
 	(label "INT_MAG"
 		(at 193.0 31.27 0)
@@ -523,7 +523,7 @@
 			)
 			(justify right)
 		)
-		(uuid "403773ce-e719-456e-871a-818b26ab8727")
+		(uuid "c7ba2729-7668-439e-8870-b9ee49f7cfcf")
 	)
 	(wire
 		(pts
@@ -534,7 +534,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "8555dbb2-5e4b-4146-9f0f-f6d0b78d4c41")
+		(uuid "35727dcb-8273-44e0-a368-c0787f67d17c")
 	)
 	(sheet
 		(at 33.0 50.0)
@@ -548,7 +548,7 @@
 		(fill
 			(color 0 0 0 0.0)
 		)
-		(uuid "39197ccd-130b-4b13-8849-3ab9acc3cbef")
+		(uuid "1131e57b-858f-4bd5-acaf-fcc7c3bffaff")
 		(property "Sheet name" "MIKROBUS"
 			(id 0)
 			(at 35.0 48.0 0)
@@ -559,7 +559,7 @@
 				(justify left)
 			)
 		)
-		(property "Sheet file" "subsystems/mikrobus.kicad_sch"
+		(property "Sheet file" "/home/givaldo/Documents/repos/KiCad-Templates/subsystems/mikrobus.kicad_sch"
 			(id 1)
 			(at 35.0 52.0 0)
 			(effects
@@ -587,7 +587,7 @@
 				)
 				(justify left)
 			)
-			(uuid "d51348ef-9134-4522-be76-4f6c378a52c4")
+			(uuid "ed96434c-4264-445a-9fca-3bf71b0d3490")
 		)
 		(pin "INT" input
 			(at 33.0 56.19 180.0)
@@ -597,7 +597,7 @@
 				)
 				(justify left)
 			)
-			(uuid "07d5c173-abde-47bf-a4e4-355d5fcf01ed")
+			(uuid "24f1771f-bcdd-41d1-97c0-473fe79f1dd7")
 		)
 		(pin "CS" bidirectional
 			(at 33.0 58.73 180.0)
@@ -607,7 +607,7 @@
 				)
 				(justify left)
 			)
-			(uuid "76ccac0b-01ef-4d1b-b3ab-536d7f803918")
+			(uuid "49cbf3b0-2fc9-4f2b-962a-b16056cdd78e")
 		)
 		(pin "MOSI" bidirectional
 			(at 33.0 61.269999999999996 180.0)
@@ -617,7 +617,7 @@
 				)
 				(justify left)
 			)
-			(uuid "c96bd62f-04ae-4b17-bbf8-ed18d1d65416")
+			(uuid "8d50af02-970a-4066-ab8e-9973b61f39da")
 		)
 		(pin "PWM" bidirectional
 			(at 33.0 63.81 180.0)
@@ -627,7 +627,7 @@
 				)
 				(justify left)
 			)
-			(uuid "92865d92-6dc5-4fd4-a1d6-714420b7af52")
+			(uuid "0e6730af-df81-4494-b20c-d3a8ceb2cbb5")
 		)
 		(pin "TX" bidirectional
 			(at 33.0 66.35 180.0)
@@ -637,7 +637,7 @@
 				)
 				(justify left)
 			)
-			(uuid "219c3339-d98a-4352-b4a6-ea0013f2b23f")
+			(uuid "53030ef4-f920-45c6-a290-391fbc142949")
 		)
 		(pin "SCL" bidirectional
 			(at 63.0 54.92 0.0)
@@ -647,7 +647,7 @@
 				)
 				(justify right)
 			)
-			(uuid "19a00161-eff4-459e-a50b-6d8412467dde")
+			(uuid "39dcbee6-81e1-4ed7-af3b-042ed0ca04ec")
 		)
 		(pin "RESET" input
 			(at 63.0 57.46 0.0)
@@ -657,7 +657,7 @@
 				)
 				(justify right)
 			)
-			(uuid "aa50ef37-0595-4bc4-a1c1-6b32233f40ae")
+			(uuid "607e5741-e974-425b-b8ee-dea33f3bb341")
 		)
 		(pin "SCK" bidirectional
 			(at 63.0 60.0 0.0)
@@ -667,7 +667,7 @@
 				)
 				(justify right)
 			)
-			(uuid "18251def-0bfd-45a9-b553-c05a84bedfb8")
+			(uuid "16c598b6-591e-4a49-9543-a7be52d0426d")
 		)
 		(pin "MISO" bidirectional
 			(at 63.0 62.54 0.0)
@@ -677,7 +677,7 @@
 				)
 				(justify right)
 			)
-			(uuid "af4090aa-1d59-437e-8083-ed53ff337317")
+			(uuid "ca13739f-51e0-4505-bbcf-f5365549f34f")
 		)
 		(pin "RX" bidirectional
 			(at 63.0 65.08 0.0)
@@ -687,7 +687,7 @@
 				)
 				(justify right)
 			)
-			(uuid "e51e040e-bd60-4f8a-a96e-d6af4bdddb18")
+			(uuid "8a40ecb2-5b0a-425d-89d0-90dae206ccda")
 		)
 	)
 	(label "SCL"
@@ -698,7 +698,7 @@
 			)
 			(justify left)
 		)
-		(uuid "8c260206-e9e2-4812-ad64-93e7609f8cf0")
+		(uuid "cc213140-908b-4fde-9ce1-9b71375afde1")
 	)
 	(wire
 		(pts
@@ -709,7 +709,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "3b622daf-cd06-4539-ad1f-494a83b1c2d7")
+		(uuid "2a211441-f78e-4362-82a8-b38b43100513")
 	)
 	(label "SDA"
 		(at 28.0 53.65 0)
@@ -719,7 +719,7 @@
 			)
 			(justify right)
 		)
-		(uuid "d80242c8-c592-4987-a65d-2b0b30d090f3")
+		(uuid "2d621a6c-63b7-43aa-869a-80481bee47b1")
 	)
 	(wire
 		(pts
@@ -730,7 +730,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "52137b56-40cb-44aa-af6a-d19c9f9844e4")
+		(uuid "be25946c-c6ef-4fd9-bc99-6433f4b88e3f")
 	)
 	(label "INT_MK"
 		(at 28.0 56.19 0)
@@ -740,7 +740,7 @@
 			)
 			(justify right)
 		)
-		(uuid "d1382785-a5de-4b75-aeff-0d5918c1ea6e")
+		(uuid "5e3a9f13-bfaa-423c-994e-dcfbc2f08d72")
 	)
 	(wire
 		(pts
@@ -751,7 +751,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "a749f28a-e503-4ce8-8e54-9e38377e9c20")
+		(uuid "1cbea464-102f-482d-a4a3-d79cf7abf6b2")
 	)
 	(label "CS_MK"
 		(at 28.0 58.73 0)
@@ -761,7 +761,7 @@
 			)
 			(justify right)
 		)
-		(uuid "a45cd61c-875d-4cc6-a326-2f9b51245dbb")
+		(uuid "0b8886eb-a9d0-48c1-8f05-f24b793d245c")
 	)
 	(wire
 		(pts
@@ -772,7 +772,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "6f3a137f-9969-40c0-911b-6a9913c15ba0")
+		(uuid "c124167b-0670-4c26-b9e4-1463d10650e8")
 	)
 	(label "MOSI"
 		(at 28.0 61.269999999999996 0)
@@ -782,7 +782,7 @@
 			)
 			(justify right)
 		)
-		(uuid "09272297-d220-4a0f-8805-875eb62f9238")
+		(uuid "7a533034-c400-4a32-b2ef-967c0a51a173")
 	)
 	(wire
 		(pts
@@ -793,7 +793,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "b5a34f5d-ec6b-4f03-a96f-e8e41dbbadaa")
+		(uuid "5e32ca84-3b53-4032-9223-9106a75a0fb8")
 	)
 	(label "PWM_MK"
 		(at 28.0 63.81 0)
@@ -803,7 +803,7 @@
 			)
 			(justify right)
 		)
-		(uuid "83b8dc6e-674b-4cac-95f4-1be22d4b2fd3")
+		(uuid "5a26d304-98c8-4c83-b59d-60ec1f4c9c8f")
 	)
 	(wire
 		(pts
@@ -814,7 +814,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "3819f715-9a4a-4c0f-a55e-d7d8d4e7fa85")
+		(uuid "080b1f72-020c-4886-b380-d795214ceba5")
 	)
 	(label "TX_MK"
 		(at 28.0 66.35 0)
@@ -824,7 +824,7 @@
 			)
 			(justify right)
 		)
-		(uuid "4b4fd03a-7483-4a51-8ec2-dea10a6b0566")
+		(uuid "a6b543de-5e62-4dac-9bbb-f1a385e924b2")
 	)
 	(wire
 		(pts
@@ -835,7 +835,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "c3511a6c-3c63-4d63-9054-ed712c580a4f")
+		(uuid "246b6cef-8753-426c-827a-6ef4a6ea07f9")
 	)
 	(label "SCL"
 		(at 68.0 54.92 0)
@@ -845,7 +845,7 @@
 			)
 			(justify left)
 		)
-		(uuid "b5dafded-dc15-40d2-afdc-12c81bdf09ea")
+		(uuid "d623933d-43da-497b-ada9-b9cf1644d588")
 	)
 	(wire
 		(pts
@@ -856,7 +856,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "b4809b1e-bb2d-498f-83f6-45bbfe4ece8e")
+		(uuid "722df8a8-ed45-4ad0-bdb9-16598aa12512")
 	)
 	(label "RESET_MK"
 		(at 68.0 57.46 0)
@@ -866,7 +866,7 @@
 			)
 			(justify left)
 		)
-		(uuid "7248de3d-4cea-4a47-bc30-d43020075f26")
+		(uuid "ab2144c0-743b-4a95-9038-751446b8b519")
 	)
 	(wire
 		(pts
@@ -877,7 +877,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "2600064f-1ceb-460a-921d-349f76382a7f")
+		(uuid "47ac878d-94e9-4171-88bc-593da7545960")
 	)
 	(label "SCK"
 		(at 68.0 60.0 0)
@@ -887,7 +887,7 @@
 			)
 			(justify left)
 		)
-		(uuid "06c7e991-8ac1-4dbf-bcd7-60c294f83a88")
+		(uuid "9aee56b4-1b8a-423e-a73c-f015ef9c6f92")
 	)
 	(wire
 		(pts
@@ -898,7 +898,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "0ef26c82-a466-4355-9033-ff1c46edcbf5")
+		(uuid "b4ba8121-a66c-4c2f-8c01-34cda1f767be")
 	)
 	(label "MISO"
 		(at 68.0 62.54 0)
@@ -908,7 +908,7 @@
 			)
 			(justify left)
 		)
-		(uuid "b2b4b5f6-1aa9-44dc-827f-2a694c6e2298")
+		(uuid "d291ea4a-39f7-4d86-85a7-0d61b8b9ec3e")
 	)
 	(wire
 		(pts
@@ -919,7 +919,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "d9f5948e-cdc3-4138-b275-bdbec57f2849")
+		(uuid "25fe31bb-6bed-47b8-923e-b2ca0ab1916b")
 	)
 	(label "RX_MK"
 		(at 68.0 65.08 0)
@@ -929,6 +929,6 @@
 			)
 			(justify left)
 		)
-		(uuid "2d3c383e-30cc-4982-bdc4-d252d478594a")
+		(uuid "97e63033-7fa8-47e2-b2fe-91b7cc9e7001")
 	)
 )
