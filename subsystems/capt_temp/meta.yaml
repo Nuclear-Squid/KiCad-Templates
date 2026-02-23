@@ -1,0 +1,15 @@
+sheet_name: TempSensor
+sheet_file: capt_temp.kicad_sch
+at_xy: [0, 0]
+size_wh: [30, 20]
+
+properties:
+  Comment: CAN Buffer
+
+pins:
+  - name: SDA
+    type: bidirectional
+    net: SDA
+  - name: SCL
+    type: bidirectional
+    net: SCL

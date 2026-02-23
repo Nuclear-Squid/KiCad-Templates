@@ -1,0 +1,23 @@
+sheet_name : CANBuffer
+sheet_file: subsystems/can_buffer/can_buffer.kicad_sch
+at_xy: [0, 0]
+size_wh: [30, 20]
+properties:
+  Comment: CAN Buffer
+
+pins:
+  - name: CAN_H
+    type: bidirectional
+    net: CAN_H
+
+  - name: CAN_L
+    type: bidirectional
+    net: CAN_L
+
+  - name: CAN_TX
+    type: bidirectional
+    net: CAN_TX
+
+  - name: CAN_RX
+    type: bidirectional
+    net: CAN_RX
