@@ -42,7 +42,7 @@ class HierarchicalObject:
             return cls(
                 dev_name=os.path.basename(path_to_yaml_metadata.parent),
                 sheet_name=meta["sheet_name"],
-                sheet_file=meta["sheet_file"],
+                sheet_file = path_to_yaml_metadata.parent / meta["sheet_file"],
                 at_xy=meta["at_xy"],
                 size_wh=meta["size_wh"],
                 properties=meta["properties"],

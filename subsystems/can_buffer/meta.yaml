@@ -1,5 +1,5 @@
 sheet_name : CANBuffer
-sheet_file: subsystems/can_buffer/can_buffer.kicad_sch
+sheet_file: can_buffer.kicad_sch
 at_xy: [0, 0]
 size_wh: [30, 20]
 properties:

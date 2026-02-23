@@ -6,6 +6,6 @@ properties:
   Comment: Buzzer
 
 pins:
-  - name: BUZZÈR_PIN
+  - name: BUZZER_PIN
     type: input
-    net:  BUZZÈR
+    net:  BUZZER
