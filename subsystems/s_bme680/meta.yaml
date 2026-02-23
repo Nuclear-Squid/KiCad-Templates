@@ -1,0 +1,16 @@
+sheet_name: BME680
+sheet_file: subsystems/s_bme680/s_bme680.kicad_sch
+at_xy: [0, 0]
+size_wh: [30, 20]
+
+properties:
+  Comment: Temperature Sensor
+
+pins:
+  - name: SDA
+    type: bidirectional
+    net: SDA
+
+  - name: SCL
+    type: bidirectional
+    net: SCL

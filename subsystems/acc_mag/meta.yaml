@@ -1,0 +1,20 @@
+sheet_name :  ACC_MAG
+sheet_file: subsystems/acc_mag/acc_mag.kicad_sch
+at_xy: [0, 0]
+size_wh: [30, 20]
+
+properties:
+  Comment: Accelerometer and Magnetometer
+
+pins:
+  - name: SDA
+    type: bidirectional
+    net: SDA
+
+  - name: SCL
+    type: bidirectional
+    net: SCL
+
+  - name: INT_MAG
+    type: input
+    net: INT_MAG

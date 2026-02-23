@@ -1,5 +1,23 @@
+import os
+from pathlib import Path
+from textwrap import dedent
+from typing import Self
+
+import yaml
+
+
 class HierarchicalObject:
-    def __init__(self, sheet_name: str, sheet_file:str, at_xy, size_wh, properties = None, pins = None):
+    def __init__(
+        self,
+        dev_name: str,
+        sheet_name: str,
+        sheet_file: str,
+        at_xy,
+        size_wh,
+        properties=None,
+        pins=None,
+    ):
+        self.dev_name = dev_name
         self.sheet_name = sheet_name
         self.sheet_file = sheet_file
         self.at_xy = at_xy
@@ -7,3 +25,27 @@ class HierarchicalObject:
         self.properties = properties
         self.pins = pins
 
+    def __str__(self):
+        return dedent(f"""
+            Hierarchical sheet "{self.sheet_name}" ({self.dev_name})
+              - path = {self.sheet_file}
+              - position = {self.at_xy}
+              - size = {self.size_wh}
+              - properties = {self.properties}
+              - pins = {self.pins}
+        """)
+
+    @classmethod
+    def load_from_yaml(cls, path_to_yaml_metadata: Path) -> Self | None:
+        with open(path_to_yaml_metadata, "r") as yaml_metadata:
+            meta = yaml.safe_load(yaml_metadata)
+            return cls(
+                dev_name=os.path.basename(path_to_yaml_metadata.parent),
+                sheet_name=meta["sheet_name"],
+                sheet_file=meta["sheet_file"],
+                at_xy=meta["at_xy"],
+                size_wh=meta["size_wh"],
+                properties=meta["properties"],
+                pins=meta["pins"],
+            )
+        return None
