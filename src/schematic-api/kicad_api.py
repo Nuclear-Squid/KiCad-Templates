@@ -2,6 +2,8 @@ from sexpdata import loads, dumps, Symbol
 from typing import Dict, List, Optional, Union
 from shutil import copy
 from pathlib import Path
+from templates import SCH_Templates
+import re
 import os
 import glob
 import uuid
@@ -11,8 +13,7 @@ from project_builder import project_builder
 from hierarchical_object import HierarchicalObject  # Ajoute cette ligne
 
 
-PROJECT_FOLDER = Path(__file__).parent.parent
-
+PROJECT_FOLDER = Path(__file__).parent.parent.parent
 
 
 def _format_sexp_kicad(data, indent=0) -> str:
@@ -57,7 +58,8 @@ def _format_sexp_kicad(data, indent=0) -> str:
                 if first_line_atoms:
                     out += " ".join(fmt_atom(a) for a in first_line_atoms)
                     first_line_atoms = []
-                out += "\n" + (TAB * (indent + 1)) + _format_sexp_kicad(x, indent + 1)
+                out += "\n" + (TAB * (indent + 1)) + \
+                    _format_sexp_kicad(x, indent + 1)
             else:
                 first_line_atoms.append(x)
 
@@ -197,7 +199,8 @@ class KiCadSchematic:
 
     def add_hierarchical_sheet(
         self,
-        object,                          # attrs: sheet_name, sheet_file, at_xy, size_wh, properties, pins
+        # attrs: sheet_name, sheet_file, at_xy, size_wh, properties, pins
+        object,
         page_for_instance: str = "2",
         pin_margin_mm: float = 2.0,      # pin margin from top/bottom edges
         min_delta_mm: float = 1.0,       # minimum spacing between pins on the same side
@@ -205,15 +208,16 @@ class KiCadSchematic:
         equal_two_sides: bool = False,   # enables equal distribution on both sides
         equal_spacing_mm: float = 2.54,  # spacing (mm) in equal_two_sides mode
     ):
-        at_x, at_y = float(object.at_xy[0]), float(object.at_xy[1])   # (at X Y) — sem rotação
-        w, h       = float(object.size_wh[0]), float(object.size_wh[1])
-        x_left     = at_x
-        x_right    = at_x + w
-        y_top      = at_y
-        y_bot      = at_y + h
+        at_x, at_y = float(object.at_xy[0]), float(
+            object.at_xy[1])   # (at X Y) — sem rotação
+        w, h = float(object.size_wh[0]), float(object.size_wh[1])
+        x_left = at_x
+        x_right = at_x + w
+        y_top = at_y
+        y_bot = at_y + h
 
         props = object.properties or {}
-        pins  = object.pins or []
+        pins = object.pins or []
 
         # ---- Helper functions for pin placement based on type ----
         def _spread_ys(n: int) -> list:
@@ -236,7 +240,7 @@ class KiCadSchematic:
             for p in group:
                 ys.append(float(p["y"]) if "y" in p else next(auto_it))
 
-            low  = y_top + pin_margin_mm
+            low = y_top + pin_margin_mm
             high = y_bot - pin_margin_mm
             if not ys:
                 return ys
@@ -246,7 +250,7 @@ class KiCadSchematic:
                 target = max(ys[i], ys[i-1] + min_delta_mm)
                 ys[i] = min(target, high)
 
-            #if it overflows at bottom, shift up as much as possible
+            # if it overflows at bottom, shift up as much as possible
             if ys[-1] > high and len(ys) > 1:
                 overflow = ys[-1] - high
                 spread = ys[-1] - ys[0]
@@ -271,11 +275,12 @@ class KiCadSchematic:
             if n <= 0:
                 return []
 
-            low  = y_top + pin_margin_mm
+            low = y_top + pin_margin_mm
             high = y_bot - pin_margin_mm
             usable_h = max(high - low, 0.1)
 
-            step = float(step_mm) if step_mm and step_mm > 0 else (usable_h / max(n, 1))
+            step = float(step_mm) if step_mm and step_mm > 0 else (
+                usable_h / max(n, 1))
             if n == 1:
                 y = at_y + h / 2.0
                 return [min(max(y, low), high)]
@@ -305,8 +310,9 @@ class KiCadSchematic:
             for i, p in enumerate(pins):
                 (left_pins if i % 2 == 0 else right_pins).append(p)
 
-            ys_left  = _equal_spread_centered(len(left_pins),  equal_spacing_mm)
-            ys_right = _equal_spread_centered(len(right_pins), equal_spacing_mm)
+            ys_left = _equal_spread_centered(len(left_pins),  equal_spacing_mm)
+            ys_right = _equal_spread_centered(
+                len(right_pins), equal_spacing_mm)
         else:
             # alternates by type
             for p in pins:
@@ -316,9 +322,10 @@ class KiCadSchematic:
                 elif t in ("output", "power_out"):
                     right_pins.append(p)
                 else:
-                    (left_pins if p.get("side", "right") == "left" else right_pins).append(p)
+                    (left_pins if p.get("side", "right")
+                     == "left" else right_pins).append(p)
 
-            ys_left  = _resolve_y_for_group(left_pins)
+            ys_left = _resolve_y_for_group(left_pins)
             ys_right = _resolve_y_for_group(right_pins)
 
         #   2) Builds the block (sheet ...)
@@ -332,7 +339,7 @@ class KiCadSchematic:
                 [Symbol("width"), 0.1524],
                 [Symbol("type"), Symbol("solid")],
                 [Symbol("color"), 0, 0, 0, 0],
-            ],
+             ],
             [Symbol("fill"), [Symbol("color"), 0, 0, 0, 0.0]],
             [Symbol("uuid"), f'"{sheet_uuid}"'],
             [Symbol("property"), '"Sheet name"', f'"{object.sheet_name}"',
@@ -341,16 +348,16 @@ class KiCadSchematic:
                 [Symbol("effects"),
                     [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
                     [Symbol("justify"), Symbol("left")],
-                ],
-            ],
+                 ],
+             ],
             [Symbol("property"), '"Sheet file"', f'"{object.sheet_file}"',
                 [Symbol("id"), 1],
                 [Symbol("at"), at_x + 2.0, at_y + 2.0, 0],
                 [Symbol("effects"),
                     [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
                     [Symbol("justify"), Symbol("left")],
-                ],
-            ],
+                 ],
+             ],
         ]
 
         # Extra properties
@@ -358,12 +365,12 @@ class KiCadSchematic:
         for k, v in props.items():
             sheet.append(
                 [Symbol("property"), f'"{k}"', f'"{v}"',
-                [Symbol("id"), prop_id],
-                [Symbol("at"), at_x, at_y, 0],
-                [Symbol("effects"),
+                 [Symbol("id"), prop_id],
+                 [Symbol("at"), at_x, at_y, 0],
+                 [Symbol("effects"),
                     [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
                     [Symbol("hide"), Symbol("yes")],
-                ]]
+                  ]]
             )
             prop_id += 1
 
@@ -373,33 +380,33 @@ class KiCadSchematic:
 
         # Left: angle 180
         for p, y in zip(left_pins, ys_left):
-            name  = p.get("name", "IN")
+            name = p.get("name", "IN")
             ptype = p.get("type", "input")
             pin_uuid = str(uuid.uuid4())
             sheet.append(
                 [Symbol("pin"), f'"{name}"', Symbol(ptype),
-                [Symbol("at"), x_left, y, 180.0],
-                [Symbol("effects"),
+                 [Symbol("at"), x_left, y, 180.0],
+                 [Symbol("effects"),
                     [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
                     [Symbol("justify"), Symbol("left")],
-                ],
-                [Symbol("uuid"), f'"{pin_uuid}"']]
+                  ],
+                 [Symbol("uuid"), f'"{pin_uuid}"']]
             )
             left_pin_positions.append((p, (x_left, y)))
 
         # Right: angle 0
         for p, y in zip(right_pins, ys_right):
-            name  = p.get("name", "OUT")
+            name = p.get("name", "OUT")
             ptype = p.get("type", "output")
             pin_uuid = str(uuid.uuid4())
             sheet.append(
                 [Symbol("pin"), f'"{name}"', Symbol(ptype),
-                [Symbol("at"), x_right, y, 0.0],
-                [Symbol("effects"),
+                 [Symbol("at"), x_right, y, 0.0],
+                 [Symbol("effects"),
                     [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
                     [Symbol("justify"), Symbol("right")],
-                ],
-                [Symbol("uuid"), f'"{pin_uuid}"']]
+                  ],
+                 [Symbol("uuid"), f'"{pin_uuid}"']]
             )
             right_pin_positions.append((p, (x_right, y)))
 
@@ -414,33 +421,37 @@ class KiCadSchematic:
         si = self._ensure_section("sheet_instances")
 
         has_root = any(
-            isinstance(e, list) and e and e[0] == Symbol("path") and str(e[1]) == '"/"'
+            isinstance(e, list) and e and e[0] == Symbol(
+                "path") and str(e[1]) == '"/"'
             for e in si[1:]
         )
         if not has_root:
             si.append([Symbol("path"), '"/"', [Symbol("page"), '"1"']])
 
         # Corrigido: path de folha filha deve incluir root_uuid
-        si.append([Symbol("path"), f'"/{root_uuid}/{sheet_uuid}"', [Symbol("page"), f'"{page_for_instance}"']])
+        si.append([Symbol("path"), f'"/{root_uuid}/{sheet_uuid}"',
+                  [Symbol("page"), f'"{page_for_instance}"']])
 
         #   5) NET LABELS (optional): create wires + labels for pin nets
         def _add_wire(x1, y1, x2, y2):
             self.data.append(
                 [Symbol("wire"),
-                [Symbol("pts"), [Symbol("xy"), x1, y1], [Symbol("xy"), x2, y2]],
-                [Symbol("stroke"), [Symbol("width"), 0], [Symbol("type"), Symbol("default")]],
-                [Symbol("uuid"), f'"{uuid.uuid4()}"']]
+                 [Symbol("pts"), [Symbol("xy"), x1, y1],
+                  [Symbol("xy"), x2, y2]],
+                 [Symbol("stroke"), [Symbol("width"), 0], [
+                     Symbol("type"), Symbol("default")]],
+                 [Symbol("uuid"), f'"{uuid.uuid4()}"']]
             )
 
         def _add_label(name, x, y, justify_sym):
             self.data.append(
                 [Symbol("label"), f'"{name}"',
-                [Symbol("at"), x, y, 0],
-                [Symbol("effects"),
+                 [Symbol("at"), x, y, 0],
+                 [Symbol("effects"),
                     [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
                     [Symbol("justify"), Symbol(justify_sym)]
-                ],
-                [Symbol("uuid"), f'"{uuid.uuid4()}"']]
+                  ],
+                 [Symbol("uuid"), f'"{uuid.uuid4()}"']]
             )
 
         # Left: wire goes to x_left - net_wire_len_mm, label at end with justify right
@@ -465,15 +476,19 @@ class KiCadSchematic:
 
         return {"sheet_uuid": sheet_uuid, "root_uuid": root_uuid}
 
-
     def add_hierarchical_sheets(
         self,
         objects,                          # list of HierarchicalObjects
-        origin_xy=(50.0, 50.0),           # initial position (top-left) for placement
-        flow="row",                       # row for horizontal breaks, column for vertical breaks (not implemented)
-        max_row_width_mm=180.0,           # max width before line break (only for flow=row)
-        h_gap_factor=0.5,                 # gap horizontal = max(h_gap_factor * w_obj, min_hgap)
-        v_gap_factor=0.8,                 # gap vertical   = max(v_gap_factor * h_row, min_vgap)
+        # initial position (top-left) for placement
+        origin_xy=(50.0, 50.0),
+        # row for horizontal breaks, column for vertical breaks (not implemented)
+        flow="row",
+        # max width before line break (only for flow=row)
+        max_row_width_mm=180.0,
+        # gap horizontal = max(h_gap_factor * w_obj, min_hgap)
+        h_gap_factor=0.5,
+        # gap vertical   = max(v_gap_factor * h_row, min_vgap)
+        v_gap_factor=0.8,
         min_hgap=4.0,                     # minimum gaps (mm) para legibilidade
         min_vgap=6.0,
         page_for_instance_start=2,
@@ -491,12 +506,12 @@ class KiCadSchematic:
         page_num = int(page_for_instance_start)
 
         def _hgap(w):  # gap proportional to object width
-            #return max(h_gap_factor * float(w), float(min_hgap))
-            return 25 # constant value for better spacing
+            # return max(h_gap_factor * float(w), float(min_hgap))
+            return 25  # constant value for better spacing
 
         def _vgap(h):  # gap proportional to row height
-            #return max(v_gap_factor * float(h), float(min_vgap))
-            return 10 #constant value for better spacing
+            # return max(v_gap_factor * float(h), float(min_vgap))
+            return 10  # constant value for better spacing
         for obj in objects:
             w = float(obj.size_wh[0])
             h = float(obj.size_wh[1])
@@ -515,7 +530,7 @@ class KiCadSchematic:
                 page_for_instance=str(page_num),
                 pin_margin_mm=pin_margin_mm,
                 min_delta_mm=min_delta_mm,
-                equal_two_sides= True,
+                equal_two_sides=True,
             )
             placed.append({
                 "object": obj,
@@ -531,7 +546,6 @@ class KiCadSchematic:
             page_num += 1
 
         return placed
-
 
     def _format_sexp(self, data, indent=0) -> str:
         return _format_sexp_kicad(data, indent)
@@ -602,7 +616,8 @@ class KiCadSchematic:
 
             # 3️⃣ Si pas présent, on l’ajoute au début de (lib_symbols ...)
             if not already_in_lib:
-                print(f"➕ Ajout du symbole '{lib_name}' dans la section (lib_symbols)")
+                print(
+                    f"➕ Ajout du symbole '{lib_name}' dans la section (lib_symbols)")
                 try:
                     lib_symbol_ast = loads(symbol_data)
                     lib_section.insert(1, lib_symbol_ast)
@@ -654,7 +669,8 @@ class KiCadSchematic:
                             Symbol("property"),
                             '"Reference"',
                             f'"{ref}"',
-                            [Symbol("at"), float(at[0]) + 2.54, float(at[1]) - 1.27, 0],
+                            [Symbol("at"), float(at[0]) + 2.54,
+                             float(at[1]) - 1.27, 0],
                             [
                                 Symbol("effects"),
                                 [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
@@ -669,7 +685,8 @@ class KiCadSchematic:
                             Symbol("property"),
                             '"Value"',
                             f'"{value}"',
-                            [Symbol("at"), float(at[0]) + 2.54, float(at[1]) + 1.27, 0],
+                            [Symbol("at"), float(at[0]) + 2.54,
+                             float(at[1]) + 1.27, 0],
                             [
                                 Symbol("effects"),
                                 [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
@@ -684,7 +701,8 @@ class KiCadSchematic:
                             Symbol("property"),
                             '"Footprint"',
                             f'"{footprint}"',
-                            [Symbol("at"), float(at[0]) - 1.778, float(at[1]), 90],
+                            [Symbol("at"), float(at[0]) -
+                             1.778, float(at[1]), 90],
                             [
                                 Symbol("effects"),
                                 [Symbol("font"), [Symbol("size"), 1.27, 1.27]],
@@ -762,7 +780,8 @@ class KiCadSchematic:
         """
         # Extraire le nom du symbole (ex: "R")
         symbol_name = (
-            str(lib_symbol[1]) if isinstance(lib_symbol[1], Symbol) else lib_symbol[1]
+            str(lib_symbol[1]) if isinstance(
+                lib_symbol[1], Symbol) else lib_symbol[1]
         )
 
         # Créer la structure du composant pour le schématique
@@ -942,11 +961,64 @@ class KiCadAPI:
         self.schematic = None
         self.pcb = None
 
-    def project_creation(self, project_name: str) -> KiCadSchematic:
+    def project_creation(self) -> KiCadSchematic:
+        # project naming
+        project_name = input("Entrez le nom du projet KiCad:")
+        # TODO: limit project name to valid characters and length for KiCad
+        for character in project_builder:
+            if not character.isalnum() and character not in ('-', '_'):
+                print(
+                    "Erreur: le nom du projet ne doit contenir que des lettres, chiffres, tirets ou underscores.")
+                return
+
+        # Project setup
         project_builder(project_name)
-        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'fp-lib-table', PROJECT_FOLDER / project_name / 'fp-lib-table')
-        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'sym-lib-table', PROJECT_FOLDER / project_name / 'sym-lib-table')
-        self.schematic = KiCadSchematic(f'{project_name}/{project_name}.kicad_sch')
+
+        # dependencies
+        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'fp-lib-table',
+             PROJECT_FOLDER / project_name / 'fp-lib-table')
+        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'sym-lib-table',
+             PROJECT_FOLDER / project_name / 'sym-lib-table')
+        self.schematic = KiCadSchematic(
+            f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
+
+        # user selection
+        print("Sélectionnez des templates de feuille hiérarchique parmi les suivants:")
+        print(list(enumerate(SCH_Templates.hierarchicalObjects.keys())))
+
+        input_str = input(
+            "Entrez les numéros (separez par des virgules ou espace):")
+
+        int_list = []
+
+        for num in re.split(r'[,\s]+', input_str.strip()):
+            try:
+                int_list.append(int(num))
+            except ValueError:
+                print(f"Erreur: '{num}' n'est pas un numéro valide.")
+
+        print(int_list)
+        template_list = []
+        for i in int_list:
+            if 0 <= i < len(SCH_Templates.hierarchicalObjects):
+                template = list(SCH_Templates.hierarchicalObjects.values())[i]
+                print(template)
+                template_list.append(template)
+            else:
+                print(f"Erreur: l'index {i} est invalide.")
+        print(template_list)
+        self.schematic.add_hierarchical_sheets(
+            template_list,
+            origin_xy=(33, 20),
+            max_row_width_mm=200,   # controla quantos cabem por linha
+            h_gap_factor=0.8,       # gap horizontal proporcional ao tamanho
+            v_gap_factor=1.0,       # gap vertical proporcional à altura
+            page_for_instance_start=10   # evita conflito com páginas anteriores
+        )
+
+        self.schematic.export_schematic(
+            f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
+
         return self.schematic
 
     def load_schematic(self, file_path: str) -> KiCadSchematic:
@@ -968,4 +1040,3 @@ class KiCadAPI:
         """Crée un nouveau PCB vide."""
         self.pcb = KiCadPCB()
         return self.pcb
-
