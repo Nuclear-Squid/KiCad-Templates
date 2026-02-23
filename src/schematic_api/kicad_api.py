@@ -2,15 +2,14 @@ from sexpdata import loads, dumps, Symbol
 from typing import Dict, List, Optional, Union
 from shutil import copy
 from pathlib import Path
-from templates import SCH_Templates
 import re
 import os
 import glob
 import uuid
 
 
-from project_builder import project_builder
-from hierarchical_object import HierarchicalObject  # Ajoute cette ligne
+from schematic_api.project_builder import project_builder
+from schematic_api.hierarchical_object import HierarchicalObject  # Ajoute cette ligne
 
 
 PROJECT_FOLDER = Path(__file__).parent.parent.parent
@@ -961,52 +960,19 @@ class KiCadAPI:
         self.schematic = None
         self.pcb = None
 
-    def project_creation(self) -> KiCadSchematic:
-        # project naming
-        project_name = input("Entrez le nom du projet KiCad:")
-        # TODO: limit project name to valid characters and length for KiCad
-        for character in project_builder:
-            if not character.isalnum() and character not in ('-', '_'):
-                print(
-                    "Erreur: le nom du projet ne doit contenir que des lettres, chiffres, tirets ou underscores.")
-                return
-
+    def project_creation(
+        self,
+        project_name: str,
+        template_list: list[HierarchicalObject],
+    ) -> KiCadSchematic:
         # Project setup
         project_builder(project_name)
 
         # dependencies
-        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'fp-lib-table',
-             PROJECT_FOLDER / project_name / 'fp-lib-table')
-        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'sym-lib-table',
-             PROJECT_FOLDER / project_name / 'sym-lib-table')
-        self.schematic = KiCadSchematic(
-            f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
+        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'fp-lib-table', PROJECT_FOLDER / project_name / 'fp-lib-table')
+        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'sym-lib-table', PROJECT_FOLDER / project_name / 'sym-lib-table')
+        self.schematic = KiCadSchematic(f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
 
-        # user selection
-        print("Sélectionnez des templates de feuille hiérarchique parmi les suivants:")
-        print(list(enumerate(SCH_Templates.hierarchicalObjects.keys())))
-
-        input_str = input(
-            "Entrez les numéros (separez par des virgules ou espace):")
-
-        int_list = []
-
-        for num in re.split(r'[,\s]+', input_str.strip()):
-            try:
-                int_list.append(int(num))
-            except ValueError:
-                print(f"Erreur: '{num}' n'est pas un numéro valide.")
-
-        print(int_list)
-        template_list = []
-        for i in int_list:
-            if 0 <= i < len(SCH_Templates.hierarchicalObjects):
-                template = list(SCH_Templates.hierarchicalObjects.values())[i]
-                print(template)
-                template_list.append(template)
-            else:
-                print(f"Erreur: l'index {i} est invalide.")
-        print(template_list)
         self.schematic.add_hierarchical_sheets(
             template_list,
             origin_xy=(33, 20),
@@ -1016,8 +982,7 @@ class KiCadAPI:
             page_for_instance_start=10   # evita conflito com páginas anteriores
         )
 
-        self.schematic.export_schematic(
-            f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
+        self.schematic.export_schematic(f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
 
         return self.schematic
 

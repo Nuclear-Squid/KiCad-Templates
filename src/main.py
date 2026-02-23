@@ -3,8 +3,8 @@ from pathlib import Path
 
 import click
 
-from kicad_api import KiCadAPI, KiCadLibrary
-import templates
+from schematic_api.kicad_api import KiCadAPI, KiCadLibrary
+import schematic_api.templates as templates
 
 PROJECT_FOLDER = Path(__file__).parent.parent
 SUBSYSTEM_FOLDER = PROJECT_FOLDER / "subsystems"
@@ -32,41 +32,23 @@ def list():
 @click.argument("template_names", nargs=-1)
 def new(project_name: str, template_names: tuple[str, ...]):
     api = KiCadAPI()
-    lib = KiCadLibrary()
-
     subsystems = templates.load_templates(SUBSYSTEM_FOLDER)
+
+    # TODO: limit project name to valid characters and length for KiCad
+    for character in project_name:
+        if not character.isalnum() and character not in ('-', '_'):
+            print("Erreur: le nom du projet ne doit contenir que des lettres, chiffres, tirets ou underscores.")
+            return
 
     blocks = []
     for name in template_names:
         t = templates.find_template(name, subsystems)
         if t is None:
-            click.echo(
-                click.style("Error: ", fg="red") + f"Could not find template '{name}'"
-            )
+            click.echo(click.style("Error: ", fg="red") + f"Could not find template '{name}'")
             return
         blocks.append(t)
 
-    # Charger un schématique
-    schematic = api.load_schematic("test_python.kicad_sch")
-
-    # Block placement
-    placed = schematic.add_hierarchical_sheets(
-        blocks,
-        origin_xy=(33, 20),
-        max_row_width_mm=200,  # controla quantos cabem por linha
-        h_gap_factor=0.8,  # gap horizontal proporcional ao tamanho
-        v_gap_factor=1.0,  # gap vertical proporcional à altura
-        page_for_instance_start=10,  # evita conflito com páginas anteriores
-    )
-
-    print("SHEETS PLACED:")
-    for p in placed:
-        print(p)
-
-    schematic.export_schematic("test_python.kicad_sch")
-
-    print("File generated: test_python.kicad_sch")
-
+    api.project_creation(project_name, blocks)
 
 if __name__ == "__main__":
     cli()

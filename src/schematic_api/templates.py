@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from hierarchical_object import HierarchicalObject
+from schematic_api.hierarchical_object import HierarchicalObject
 
 def load_templates(templates_folder: Path) -> list[HierarchicalObject]:
     result = []
