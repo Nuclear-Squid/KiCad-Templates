@@ -1,3 +1,4 @@
+import sexpdata
 from sexpdata import loads, dumps, Symbol
 from typing import Dict, List, Optional, Union
 from shutil import copy
@@ -966,6 +967,26 @@ class KiCadAPI:
         self.schematic = None
         self.pcb = None
 
+    def add_pcb(
+        self,
+        project_path: Path,
+        pcb_path: Path,
+    ) -> None:
+        print(project_path.name)
+        project_pcb_path = project_path / f"{project_path.name}.kicad_pcb"
+        with open(project_pcb_path, "r", encoding="utf-8") as pcb_file:
+            project_pcb_data = sexpdata.load(pcb_file)
+
+        with open(pcb_path, "r", encoding="utf-8") as f:
+            pcb_data = sexpdata.load(f)
+
+        useful_symbols = ["net", "footprint", "segment"]
+        project_pcb_data += list(filter(lambda x: str(x[0]) in useful_symbols, pcb_data))
+
+        with open(project_pcb_path, "w", encoding="utf-8") as pcb_file:
+            sexpdata.dump(project_pcb_data, pcb_file)
+
+
     def project_creation(
         self,
         project_name: str,
@@ -990,6 +1011,10 @@ class KiCadAPI:
             v_gap_factor=1.0,       # gap vertical proporcional à altura
             page_for_instance_start=10   # evita conflito com páginas anteriores
         )
+
+        for template in template_list:
+            if template.pcb_file is not None:
+                self.add_pcb(project_path, template.pcb_file)
 
         self.schematic.export_schematic(f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
 
