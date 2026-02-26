@@ -1,7 +1,7 @@
 (sym_lib_table
-  (lib (name "Microbus")
-       (type "Legacy")
-       (uri "subsystems/sym-libs/mikroBUS.lib")
-       (options "")
-       (descr "Biblioteca de simbolos do usuario"))
-)
+ (lib(name "Microbus")
+  (type "KiCad")
+  (uri "${KIPRJMOD}/../subsystems/mikrobus/MIKROE-4247.kicad_sym")
+  (options "")
+  (descr "Biblioteca de simbolos do usuario"))
+ )

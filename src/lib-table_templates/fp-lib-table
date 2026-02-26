@@ -1,7 +1,7 @@
 (fp_lib_table
-  (lib (name "User")
-       (type "KiCad")
-       (uri "subsystems/s_footprints/exemplo_lib.pretty")
-       (options "")
-       (descr "Footprints do projeto"))
-)
+ (lib(name "User")
+  (type "KiCad")
+  (uri "${KIPRJMOD}/../subsystems/mikrobus/mikrobus.pretty")
+  (options "")
+  (descr "Mikrobus Footprints"))
+ )

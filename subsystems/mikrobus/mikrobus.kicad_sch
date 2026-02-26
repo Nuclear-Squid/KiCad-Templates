@@ -5,7 +5,7 @@
 	(uuid "fe6c977d-ed7e-4192-a62a-2668897439bf")
 	(paper "A4")
 	(lib_symbols
-		(symbol "Com_L432KC_symbols:MIKROE-4247"
+		(symbol "Mikrobus:MIKROE-4247"
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
@@ -1733,7 +1733,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Com_L432KC_symbols:MIKROE-4247")
+		(lib_id "Mikrobus:MIKROE-4247")
 		(at 144.78 99.06 180)
 		(unit 1)
 		(exclude_from_sim no)
@@ -1758,7 +1758,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Com_L432KC_footprint:MIKROE4247"
+		(property "Footprint" "User:MIKROE4247"
 			(at 118.11 4.14 0)
 			(effects
 				(font
