@@ -199,6 +199,7 @@ class KiCadSchematic:
     def add_hierarchical_sheet(
         self,
         # attrs: sheet_name, sheet_file, at_xy, size_wh, properties, pins
+        project_path,
         object,
         page_for_instance: str = "2",
         pin_margin_mm: float = 2.0,      # pin margin from top/bottom edges
@@ -349,7 +350,7 @@ class KiCadSchematic:
                     [Symbol("justify"), Symbol("left")],
                  ],
              ],
-            [Symbol("property"), '"Sheet file"', f'"{object.sheet_file}"',
+            [Symbol("property"), '"Sheet file"', f'"{os.path.basename(object.sheet_file)}"',
                 [Symbol("id"), 1],
                 [Symbol("at"), at_x + 2.0, at_y + 2.0, 0],
                 [Symbol("effects"),
@@ -473,10 +474,14 @@ class KiCadSchematic:
             _add_wire(px, py, x2, y2)
             _add_label(str(net), x2, y2, "left")
 
+        # 6) Copy the actual sheet file into the correct place
+        copy(object.sheet_file, project_path / os.path.basename(object.sheet_file))
+
         return {"sheet_uuid": sheet_uuid, "root_uuid": root_uuid}
 
     def add_hierarchical_sheets(
         self,
+        project_path: Path,
         objects,                          # list of HierarchicalObjects
         # initial position (top-left) for placement
         origin_xy=(50.0, 50.0),
@@ -525,6 +530,7 @@ class KiCadSchematic:
             # places block
             obj.at_xy = [cursor_x, cursor_y]
             meta = self.add_hierarchical_sheet(
+                project_path,
                 object=obj,
                 page_for_instance=str(page_num),
                 pin_margin_mm=pin_margin_mm,
@@ -968,12 +974,15 @@ class KiCadAPI:
         # Project setup
         project_builder(project_name)
 
+        project_path = PROJECT_FOLDER / project_name
+
         # dependencies
-        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'fp-lib-table', PROJECT_FOLDER / project_name / 'fp-lib-table')
-        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'sym-lib-table', PROJECT_FOLDER / project_name / 'sym-lib-table')
+        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'fp-lib-table', project_path / 'fp-lib-table')
+        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'sym-lib-table', project_path / 'sym-lib-table')
         self.schematic = KiCadSchematic(f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
 
         self.schematic.add_hierarchical_sheets(
+            project_path,
             template_list,
             origin_xy=(33, 20),
             max_row_width_mm=200,   # controla quantos cabem por linha
