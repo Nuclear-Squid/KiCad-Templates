@@ -8,7 +8,6 @@ import glob
 import uuid
 
 
-from schematic_api.project_builder import project_builder
 from schematic_api.hierarchical_object import HierarchicalObject  # Ajoute cette ligne
 
 
@@ -957,60 +956,3 @@ class KiCadPCB:
         if lib_name in self.footprint_libraries:
             return self.footprint_libraries[lib_name].get(footprint_name)
         return None
-
-
-class KiCadAPI:
-    """Classe principale pour interagir avec les fichiers KiCad."""
-
-    def __init__(self):
-        self.schematic = None
-        self.pcb = None
-
-    def project_creation(
-        self,
-        project_name: str,
-        template_list: list[HierarchicalObject],
-    ) -> KiCadSchematic:
-        # Project setup
-        project_builder(project_name)
-
-        project_path = PROJECT_FOLDER / project_name
-
-        # dependencies
-        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'fp-lib-table', project_path / 'fp-lib-table')
-        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'sym-lib-table', project_path / 'sym-lib-table')
-        self.schematic = KiCadSchematic(f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
-
-        self.schematic.add_hierarchical_sheets(
-            project_path,
-            template_list,
-            origin_xy=(33, 20),
-            max_row_width_mm=200,   # controla quantos cabem por linha
-            h_gap_factor=0.8,       # gap horizontal proporcional ao tamanho
-            v_gap_factor=1.0,       # gap vertical proporcional à altura
-            page_for_instance_start=10   # evita conflito com páginas anteriores
-        )
-
-        self.schematic.export_schematic(f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
-
-        return self.schematic
-
-    def load_schematic(self, file_path: str) -> KiCadSchematic:
-        """Charge un fichier schématique."""
-        self.schematic = KiCadSchematic(file_path)
-        return self.schematic
-
-    def load_pcb(self, file_path: str) -> KiCadPCB:
-        """Charge un fichier PCB."""
-        self.pcb = KiCadPCB(file_path)
-        return self.pcb
-
-    def create_schematic(self) -> KiCadSchematic:
-        """Crée un nouveau schématique vide."""
-        self.schematic = KiCadSchematic()
-        return self.schematic
-
-    def create_pcb(self) -> KiCadPCB:
-        """Crée un nouveau PCB vide."""
-        self.pcb = KiCadPCB()
-        return self.pcb
