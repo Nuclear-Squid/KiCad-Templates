@@ -7,6 +7,7 @@ import re
 import os
 import glob
 import uuid
+import pprint
 
 
 from schematic_api.project_builder import project_builder
@@ -967,12 +968,47 @@ class KiCadAPI:
         self.schematic = None
         self.pcb = None
 
+    def get_uuid(self, pcb_item) -> str | None:
+        for attribute in pcb_item:
+            if isinstance(attribute, list) and str(attribute[0]) == "uuid":
+                return attribute[1]
+        return None
+
+    def group_pcb_items(self, pcb_data):
+        uuids = []
+        groups = []
+
+        for item in pcb_data:
+            if str(item[0]) == "group":
+                groups.append(item)
+            elif self.get_uuid(item) is not None:
+                uuids.append(self.get_uuid(item))
+
+        # HACK: Assume Groups have a consistent strcuture with in this order:
+        # - "group" as Symbol
+        # - empty string
+        # - uuid attribute
+        # - members attribute
+        for group in groups:
+            for member in group[3][1:]:
+                # print(member)
+                uuids.remove(member)
+            uuids.append(group[2][1])
+
+        if len(uuids) > 2:
+            pcb_data.append([
+                Symbol('group'),
+                '',
+                [Symbol('uuid'), str(uuid.uuid4())],
+                [Symbol('members'), *uuids],
+            ])
+
+
     def add_pcb(
         self,
         project_path: Path,
         pcb_path: Path,
     ) -> None:
-        print(project_path.name)
         project_pcb_path = project_path / f"{project_path.name}.kicad_pcb"
         with open(project_pcb_path, "r", encoding="utf-8") as pcb_file:
             project_pcb_data = sexpdata.load(pcb_file)
@@ -980,8 +1016,13 @@ class KiCadAPI:
         with open(pcb_path, "r", encoding="utf-8") as f:
             pcb_data = sexpdata.load(f)
 
-        useful_symbols = ["net", "footprint", "segment"]
-        project_pcb_data += list(filter(lambda x: str(x[0]) in useful_symbols, pcb_data))
+        useful_symbols = ["net", "footprint", "segment", "group"]
+        useful_pcb_data = list(filter(lambda x: str(x[0]) in useful_symbols, pcb_data))
+        self.group_pcb_items(useful_pcb_data)
+
+        pprint.pp(useful_pcb_data)
+
+        project_pcb_data += useful_pcb_data
 
         with open(project_pcb_path, "w", encoding="utf-8") as pcb_file:
             sexpdata.dump(project_pcb_data, pcb_file)
