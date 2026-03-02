@@ -1,7 +1,0 @@
-(fp_lib_table
- (lib(name "User")
-  (type "KiCad")
-  (uri "${KIPRJMOD}/../subsystems/mikrobus/mikrobus.pretty")
-  (options "")
-  (descr "Mikrobus Footprints"))
- )

@@ -2,9 +2,11 @@ import os
 from pathlib import Path
 
 import click
+import sexpdata
 
-from schematic_api.kicad_api import KiCadAPI, KiCadLibrary
+from kicad_sexp import KiCadSexpNode
 import schematic_api.templates as templates
+from schematic_api.project_builder import KiCadProject
 
 PROJECT_FOLDER = Path(__file__).parent.parent
 SUBSYSTEM_FOLDER = PROJECT_FOLDER / "subsystems"
@@ -31,7 +33,6 @@ def list():
 @click.argument("project_name")
 @click.argument("template_names", nargs=-1)
 def new(project_name: str, template_names: tuple[str, ...]):
-    api = KiCadAPI()
     subsystems = templates.load_templates(SUBSYSTEM_FOLDER)
 
     # TODO: limit project name to valid characters and length for KiCad
@@ -48,7 +49,7 @@ def new(project_name: str, template_names: tuple[str, ...]):
             return
         blocks.append(t)
 
-    api.project_creation(project_name, blocks)
+    KiCadProject(project_name).write_to_disk()
 
 if __name__ == "__main__":
     cli()
