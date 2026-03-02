@@ -11,7 +11,6 @@ import uuid
 import pprint
 from copy import deepcopy
 
-from schematic_api.project_builder import project_builder
 from schematic_api.hierarchical_object import HierarchicalObject  # Ajoute cette ligne
 
 
