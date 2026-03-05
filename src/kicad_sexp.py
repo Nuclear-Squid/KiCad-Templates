@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from dataclasses import dataclass
 import itertools
 import os
@@ -46,15 +47,21 @@ class KiCadSexpNode:
             f.write(str(self))
 
 
-    def get_child(self, symbol_name: str, max_depth: int = 2 ** 16) -> Self | None:
+    def iter_children_with_name(
+        self,
+        symbol_name: str,
+        max_depth: int = 2 ** 16
+    ) -> Iterator[Self]:
         flatmap = lambda f, x: list(itertools.chain.from_iterable(map(f, x)))
         items_to_check = self.children
         while max_depth > 0 and len(items_to_check) > 0:
             for item in items_to_check:
                 if item.name == symbol_name:
-                    return item
+                    yield item
 
             max_depth -= 1
             items_to_check = flatmap(lambda x: x.children, items_to_check)
 
-        return None
+
+    def get_child(self, symbol_name: str, max_depth: int = 2 ** 16) -> Self | None:
+        return next(self.iter_children_with_name(symbol_name, max_depth))
