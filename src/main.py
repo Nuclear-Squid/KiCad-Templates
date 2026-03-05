@@ -6,7 +6,7 @@ import sexpdata
 
 from kicad_sexp import KiCadSexpNode
 import schematic_api.templates as templates
-from schematic_api.project_builder import KiCadProject
+from schematic_api.project import KiCadProject
 
 PROJECT_FOLDER = Path(__file__).parent.parent
 SUBSYSTEM_FOLDER = PROJECT_FOLDER / "subsystems"

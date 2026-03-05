@@ -515,6 +515,7 @@ class KiCadSchematic:
         def _vgap(h):  # gap proportional to row height
             # return max(v_gap_factor * float(h), float(min_vgap))
             return 10  # constant value for better spacing
+
         for obj in objects:
             w = float(obj.size_wh[0])
             h = float(obj.size_wh[1])

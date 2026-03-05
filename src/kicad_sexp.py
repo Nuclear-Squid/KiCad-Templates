@@ -13,11 +13,9 @@ class KiCadSexpNode:
     children: list[Self]
 
     def to_str(self, indent_level=0):
-        base_indent = '  ' * indent_level
-        next_indent = '  ' * (indent_level + 1)
-        attributes = ' '.join(map(str, self.attributes))
-        children = ''.join(map(lambda x: f'\n{next_indent}' + x.to_str(indent_level + 1), self.children))
-        return f"{base_indent}({self.name} {attributes}{children})"
+        attributes = ''.join(map(lambda x: f' {x}', self.attributes))
+        children = ''.join(map(lambda x: f'\n{x.to_str(indent_level + 1)}', self.children))
+        return f"{"  " * indent_level}({self.name}{attributes}{children})"
 
     def __str__(self):
         return self.to_str(indent_level=0)
