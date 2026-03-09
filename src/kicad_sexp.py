@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import re
 from typing import Self
+from uuid import uuid4
 
 import sexpdata
 
@@ -74,3 +75,51 @@ class KiCadSexpNode:
 
     def get_child(self, symbol_name: str, max_depth: int = 2 ** 16) -> Self | None:
         return next(self.iter_children_with_name(symbol_name, max_depth))
+
+
+    def append(self, sexp: Self | list) -> None:
+        if isinstance(sexp, list):
+            sexp = self.from_sexpdata(sexp)
+        self.children.append(sexp)
+
+
+    @classmethod
+    def make_wire(cls, x1, y1, x2, y2) -> Self:
+        return cls.from_sexpdata(
+            ["wire",
+                ["pts", ["xy", x1, y1], ["xy", x2, y2]],
+                ["stroke", ["width", 0], ["type", "default"]],
+                ["uuid", uuid4()]
+            ])
+
+
+    @classmethod
+    def make_label(cls, name, x, y, justify_sym) -> Self:
+        return cls.from_sexpdata(
+            ["label", name,
+                ["at", x, y, 0],
+                ["effects",
+                    ["font", ["size", 1.27, 1.27]],
+                    ["justify", justify_sym]
+                ],
+                ["uuid", uuid4()]])
+
+    @classmethod
+    def make_pin(cls, name: str, pin_type: str, x: float, y: float) -> Self:
+        return cls.from_sexpdata(
+            ["pin", name, pin_type,
+                ["at", x, y, 0],
+                ["effects",
+                    ["font", ["size", 1.27, 1.27]],
+                    ["justify", "right"],
+                ],
+                ["uuid", uuid4()]])
+
+    @classmethod
+    def make_property(cls, key: str, value: str, x: float, y: float, hide: bool = False) -> Self:
+        return cls.from_sexpdata(
+            ["property", key, value,
+                ["at", x, y, 0],
+                ["effects",
+                    ["font", ["size", 1.27, 1.27]],
+                    ["hide", "yes" if hide else "no"]]])

@@ -42,8 +42,37 @@ class KiCadSchematic:
         return cls(name, data, [])
 
 
-    # @classmethod
-    # def from_file(cls, )
+    @classmethod
+    def new_sheet(cls, sheet_name, sheet_file, w, h, x, y) -> Self:
+        return KiCadSexpNode.from_sexpdata([
+            "sheet",
+            ["at", x, y],
+            ["size", w, h],
+            ["fields_autoplaced"],
+            ["stroke",
+                ["width", 0.1524],
+                ["type", "solid"],
+                ["color", 0, 0, 0, 0],
+            ],
+            ["fill", ["color", 0, 0, 0, 0.0]],
+            ["uuid", uuid4()],
+            ["property", "Sheet name", sheet_name,
+                ["id", 0],
+                ["at", x + 2.0, y - 2.0, 0],
+                ["effects",
+                    ["font", ["size", 1.27, 1.27]],
+                    ["justify", "left"],
+                ],
+            ],
+            ["property", "Sheet file", os.path.basename(sheet_file),
+                ["id", 1],
+                ["at", x + 2.0, y + 2.0, 0],
+                ["effects",
+                    ["font", ["size", 1.27, 1.27]],
+                    ["justify", "left"],
+                ],
+            ],
+        ])
 
 
     def write_to_disk(self, project_path: Path):
@@ -68,9 +97,12 @@ class KiCadSchematic:
         equal_two_sides: bool = False,   # enables equal distribution on both sides
         equal_spacing_mm: float = 2.54,  # spacing (mm) in equal_two_sides mode
     ):
-        at_x, at_y = float(template.metadata.at_xy[0]), float(
-            template.metadata.at_xy[1])   # (at X Y) — sem rotação
-        w, h = float(template.metadata.size_wh[0]), float(template.metadata.size_wh[1])
+        at_x = float(template.metadata.at_xy[0])
+        at_y = float(template.metadata.at_xy[1])
+
+        w = float(template.metadata.size_wh[0])
+        h = float(template.metadata.size_wh[1])
+
         x_left = at_x
         x_right = at_x + w
         y_top = at_y
@@ -163,7 +195,8 @@ class KiCadSchematic:
             return ys
 
         #   1) Chose pin distribution method
-        left_pins, right_pins = [], []
+        left_pins = []
+        right_pins = []
 
         if equal_two_sides:
             # Alternates pins left/right in order of definition
@@ -171,8 +204,7 @@ class KiCadSchematic:
                 (left_pins if i % 2 == 0 else right_pins).append(p)
 
             ys_left = _equal_spread_centered(len(left_pins),  equal_spacing_mm)
-            ys_right = _equal_spread_centered(
-                len(right_pins), equal_spacing_mm)
+            ys_right = _equal_spread_centered(len(right_pins), equal_spacing_mm)
         else:
             # alternates by type
             for p in pins:
@@ -189,50 +221,18 @@ class KiCadSchematic:
             ys_right = _resolve_y_for_group(right_pins)
 
         #   2) Builds the block (sheet ...)
-        sheet_uuid = str(uuid4())
-        sheet = [
-            "sheet",
-            ["at", at_x, at_y],
-            ["size", w, h],
-            ["fields_autoplaced"],
-            ["stroke",
-                ["width", 0.1524],
-                ["type", "solid"],
-                ["color", 0, 0, 0, 0],
-             ],
-            ["fill", ["color", 0, 0, 0, 0.0]],
-            ["uuid", f"{sheet_uuid}"],
-            ["property", "Sheet name", f"{template.metadata.sheet_name}",
-                ["id", 0],
-                ["at", at_x + 2.0, at_y - 2.0, 0],
-                ["effects",
-                    ["font", ["size", 1.27, 1.27]],
-                    ["justify", "left"],
-                 ],
-             ],
-            ["property", "Sheet file", f"{os.path.basename(template.metadata.sheet_file)}",
-                ["id", 1],
-                ["at", at_x + 2.0, at_y + 2.0, 0],
-                ["effects",
-                    ["font", ["size", 1.27, 1.27]],
-                    ["justify", "left"],
-                 ],
-             ],
-        ]
+        sheet = self.new_sheet(
+            template.metadata.sheet_name,
+            template.metadata.sheet_file,
+            w,
+            h,
+            at_x,
+            at_y
+        )
 
         # Extra properties
-        prop_id = 2
         for k, v in props.items():
-            sheet.append(
-                ["property", f"{k}", f"{v}",
-                 ["id", prop_id],
-                 ["at", at_x, at_y, 0],
-                 ["effects",
-                    ["font", ["size", 1.27, 1.27]],
-                    ["hide", "yes"],
-                  ]]
-            )
-            prop_id += 1
+            sheet.append(KiCadSexpNode.make_property(k, v, at_x, at_y, hide=True))
 
         #   3) Pins
         left_pin_positions = []   # [(pin_dict, (x,y))]
@@ -242,51 +242,24 @@ class KiCadSchematic:
         for p, y in zip(left_pins, ys_left):
             name = p.get("name", "IN")
             ptype = p.get("type", "input")
-            pin_uuid = str(uuid4())
-            sheet.append(
-                ["pin", f"{name}", ptype,
-                 ["at", x_left, y, 180.0],
-                 ["effects",
-                    ["font", ["size", 1.27, 1.27]],
-                    ["justify", "left"],
-                  ],
-                 ["uuid", f"{pin_uuid}"]]
-            )
+            sheet.append(KiCadSexpNode.make_pin(name, ptype, x_left, y))
             left_pin_positions.append((p, (x_left, y)))
 
         # Right: angle 0
         for p, y in zip(right_pins, ys_right):
             name = p.get("name", "OUT")
             ptype = p.get("type", "output")
-            pin_uuid = str(uuid4())
-            sheet.append(
-                ["pin", f"{name}", ptype,
-                 ["at", x_right, y, 0.0],
-                 ["effects",
-                    ["font", ["size", 1.27, 1.27]],
-                    ["justify", "right"],
-                  ],
-                 ["uuid", f"{pin_uuid}"]]
-            )
+            sheet.append(KiCadSexpNode.make_pin(name, ptype, x_right, y))
             right_pin_positions.append((p, (x_right, y)))
 
         # # ---- Inserção do sheet ----
-        # insert_idx = len(self.data) - 1
-        # if insert_idx < 0:
-        #     insert_idx = 0
-        # self.data.insert(insert_idx, sheet)
-        self.data.children.append(KiCadSexpNode.from_sexpdata(sheet))
+        # self.data.append_sexp(sheet)
+        self.data.children.append(sheet)
 
         #   4) sheet_instances
-        # root_uuid = self._ensure_root_uuid()
         root_uuid = self.data.get_child("uuid", max_depth=1).attributes[0]
-
-        # si = self._ensure_section("sheet_instances")
         si = self.data.get_child("sheet_instances", max_depth=1)
 
-        # has_root = any(
-        #     isinstance(e, list) and e and e[0] == Symbol("path") and str(e[1]) == '"/"' for e in si[1:]
-        # )
         has_root = False
         for path in self.data.iter_children_with_name("path"):
             if path.attributes[0] == "/":
@@ -294,38 +267,14 @@ class KiCadSchematic:
                 break
 
         if not has_root:
-            si.children.append(KiCadSexpNode.from_sexpdata(["path", "/", ["page", "1"]]))
+            si.append(["path", "/", ["page", "1"]])
 
         # Corrigido: path de folha filha deve incluir root_uuid
-        # si.append(["path", f'"/{root_uuid}/{sheet_uuid}"',
-        #           ["page", f'"{page_for_instance}"']])
-        si.children.append(KiCadSexpNode.from_sexpdata([
+        si.append([
             "path",
-            f"/{root_uuid}/{sheet_uuid}",
+            f"/{root_uuid}/{sheet.get_child("uuid")}",
             ["page", f"{page_for_instance}"]
-        ]))
-
-        #   5) NET LABELS (optional): create wires + labels for pin nets
-        def _add_wire(x1, y1, x2, y2):
-            self.data.children.append(KiCadSexpNode.from_sexpdata(
-                ["wire",
-                 ["pts", ["xy", x1, y1],
-                  ["xy", x2, y2]],
-                 ["stroke", ["width", 0], [
-                     "type", "default"]],
-                 ["uuid", uuid4()]]
-            ))
-
-        def _add_label(name, x, y, justify_sym):
-            self.data.children.append(KiCadSexpNode.from_sexpdata(
-                ["label", name,
-                 ["at", x, y, 0],
-                 ["effects",
-                    ["font", ["size", 1.27, 1.27]],
-                    ["justify", justify_sym]
-                  ],
-                 ["uuid", uuid4()]]
-            ))
+        ])
 
         # Left: wire goes to x_left - net_wire_len_mm, label at end with justify right
         for p, (px, py) in left_pin_positions:
@@ -334,8 +283,8 @@ class KiCadSchematic:
                 continue
             x2 = px - float(net_wire_len_mm)
             y2 = py
-            _add_wire(px, py, x2, y2)
-            _add_label(str(net), x2, y2, "right")
+            self.data.children.append(KiCadSexpNode.make_wire(px, py, x2, y2))
+            self.data.children.append(KiCadSexpNode.make_label(str(net), x2, y2, "right"))
 
         # Right: wire goes to x_right + net_wire_len_mm, label at end with justify left
         for p, (px, py) in right_pin_positions:
@@ -344,15 +293,9 @@ class KiCadSchematic:
                 continue
             x2 = px + float(net_wire_len_mm)
             y2 = py
-            _add_wire(px, py, x2, y2)
-            _add_label(str(net), x2, y2, "left")
+            self.data.children.append(KiCadSexpNode.make_wire(px, py, x2, y2))
+            self.data.children.append(KiCadSexpNode.make_label(str(net), x2, y2, "left"))
 
-        # 6) Copy the actual sheet file into the correct place
-        # shutil.copy(
-        #     template.metadata.sheet_file,
-        #     project_path / os.path.basename(template.metadata.sheet_file)
-        # )
         self.subsheets.append(template.schematic)
 
-        # return {"sheet_uuid": sheet_uuid, "root_uuid": root_uuid}
         return
