@@ -1,6 +1,6 @@
 import sexpdata
 from sexpdata import loads, dumps, Symbol
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Any
 from shutil import copy
 from pathlib import Path
 import re
@@ -8,13 +8,14 @@ import os
 import glob
 import uuid
 import pprint
-
+from copy import deepcopy
 
 from schematic_api.project_builder import project_builder
 from schematic_api.hierarchical_object import HierarchicalObject  # Ajoute cette ligne
 
 
 PROJECT_FOLDER = Path(__file__).parent.parent.parent
+Sexp = Union[Symbol, str, int, float, List["Sexp"]]
 
 
 def _format_sexp_kicad(data, indent=0) -> str:
@@ -477,7 +478,8 @@ class KiCadSchematic:
             _add_label(str(net), x2, y2, "left")
 
         # 6) Copy the actual sheet file into the correct place
-        copy(object.sheet_file, project_path / os.path.basename(object.sheet_file))
+        copy(object.sheet_file, project_path /
+             os.path.basename(object.sheet_file))
 
         return {"sheet_uuid": sheet_uuid, "root_uuid": root_uuid}
 
@@ -1003,30 +1005,202 @@ class KiCadAPI:
                 [Symbol('members'), *uuids],
             ])
 
+    def sym(self, x: Any) -> str | None:
+        return str(x) if isinstance(x, Symbol) else None
+
+    def is_num(self, x: Any) -> bool:
+        return isinstance(x, (int, float))
+
+    def add_xy(self, node: List[Sexp], i_x: int, i_y: int, dx: float, dy: float) -> None:
+        node[i_x] = round(float(node[i_x]) + dx, 6)  # type: ignore[index]
+        node[i_y] = round(float(node[i_y]) + dy, 6)  # type: ignore[index]
+
+    def extracts_boundaries(self, tree: Sexp) -> List:
+        limits = [float('inf'), -float('inf'), float('inf'),
+                  -float('inf')]  # Left, right, up, down
+
+        if not isinstance(tree, list):
+            return
+
+        for node in tree:
+
+            temp_limits = [0, 0, 0, 0]
+            abs_temp_limits = [0, 0, 0, 0]
+            coordinates = [0, 0]  # x, y
+
+            if not isinstance(node, list) or not node:
+                continue
+            if self.sym(node[0]) != "footprint":
+                continue
+
+            # Only direct children; only first top-level (at ...)
+            for child in node[1:]:
+
+                is_crtyrd = False
+                if not isinstance(child, list) or not child:
+                    continue
+                if self.sym(child[0]) == "at" and (len(child) >= 3 and self.is_num(child[1]) and self.is_num(child[2])):
+                    coordinates[0] = round(float(child[1]), 6)
+                    coordinates[1] = round(float(child[2]), 6)
+
+                if self.sym(child[0]) == "fp_rect" or self.sym(child[0]) == "fp_line":
+                    for child_node in child:
+                        if self.sym(child_node[0]) == "layer" and child_node[1] == "F.CrtYd":
+                            is_crtyrd = True
+                        if self.sym(child_node[0]) == "start":
+                            temp_limits[0] = child_node[1]
+                            temp_limits[2] = child_node[2]
+                        if self.sym(child_node[0]) == "end":
+                            temp_limits[1] = child_node[1]
+                            temp_limits[3] = child_node[2]
+                if is_crtyrd:
+                    abs_temp_limits[0] = temp_limits[0] + coordinates[0]
+                    abs_temp_limits[1] = temp_limits[1] + coordinates[0]
+                    abs_temp_limits[2] = temp_limits[2] + coordinates[1]
+                    abs_temp_limits[3] = temp_limits[3] + coordinates[1]
+
+                    limits[0] = min(abs_temp_limits[0], limits[0])
+                    limits[1] = max(abs_temp_limits[1], limits[1])
+                    limits[2] = min(abs_temp_limits[2], limits[2])
+                    limits[3] = max(abs_temp_limits[3], limits[3])
+
+        # returns limits, sizes[x, y] and coordinates
+        return limits, [limits[1]-limits[0], limits[3]-limits[2]]
+
+    def move_top_level_footprints(self, origin: Sexp, dx: float, dy: float) -> Sexp:
+
+        if not isinstance(origin, list):
+            return
+
+        tree = deepcopy(origin)
+
+        for node in tree:
+
+            if not isinstance(node, list) or not node:
+                continue
+            if self.sym(node[0]) != "footprint":
+                continue
+
+            # Only direct children; only first top-level (at ...)
+            for child in node[1:]:
+                if not isinstance(child, list) or not child:
+                    continue
+                if self.sym(child[0]) == "at" and (len(child) >= 3 and self.is_num(child[1]) and self.is_num(child[2])):
+                    self.add_xy(child, 1, 2, dx, dy)
+
+        return tree
+
+    def move_tracks_and_vias(self, tree: Sexp, dx: float, dy: float) -> None:
+        """
+        Recursively walk the whole tree and move:
+        - segment: start/end
+        - arc: start/mid/end
+        - via: at
+        """
+        if not isinstance(tree, list):
+            return
+
+        head = self.sym(tree[0]) if tree else None
+
+        if head == "segment":
+            # Find (start x y) and (end x y) sublists
+            for child in tree[1:]:
+                if isinstance(child, list) and child:
+                    h = self.sym(child[0])
+                    if h in ("start", "end") and len(child) >= 3 and self.is_num(child[1]) and self.is_num(child[2]):
+                        self.add_xy(child, 1, 2, dx, dy)
+
+        elif head == "arc":
+            # Find (start x y), (mid x y), (end x y)
+            for child in tree[1:]:
+                if isinstance(child, list) and child:
+                    h = self.sym(child[0])
+                    if h in ("start", "mid", "end") and len(child) >= 3 and self.is_num(child[1]) and self.is_num(child[2]):
+                        self.add_xy(child, 1, 2, dx, dy)
+
+        elif head == "via":
+            # Find (at x y [..])
+            for child in tree[1:]:
+                if isinstance(child, list) and child and self.sym(child[0]) == "at":
+                    if len(child) >= 3 and self.is_num(child[1]) and self.is_num(child[2]):
+                        self.add_xy(child, 1, 2, dx, dy)
+                    break
+
+        # Recurse
+        for child in tree:
+            if isinstance(child, list):
+                self.move_tracks_and_vias(child, dx, dy)
+
+    def add_multiple_designs(self, project_path, design_adresses: List[Path], space_x=9.5, space_y=5.5, max_x=285, max_y=198, cursor_x0=25, cursor_y0=25):
+        '''
+        Takes the adresses of the kicad_pcb files and, minding their limits, arranges them in the sheet (same layer as they were)
+        In a loop:
+        1) Places a design and updates a cursor
+        2) Moves the next design according to the cursor and stores the moved design into a variable
+        3) Restarts the loop
+        '''
+        cursor = [cursor_x0, cursor_y0]
+
+        line_height = 0
+
+        for address in design_adresses:
+            tree = loads(address.read_text(encoding="utf-8"))
+            abs_lim, dimensions = self.extracts_boundaries(tree)
+
+            center_coord = [(abs_lim[1]+abs_lim[0])/2,
+                            (abs_lim[3]+abs_lim[2])/2]
+
+            if dimensions[0] > max_x or dimensions[1] > max_y:
+                raise ValueError(
+                    f"Dimensions exceeded design limits in {address}")
+                continue
+
+            if dimensions[0] > max_x - cursor[0]:  # Moves the cursor down one line
+                if dimensions[1] > max_y - cursor[1]:
+                    print(dimensions, '<-dimensoes',
+                          'limites->', cursor[1] - max_y)
+                    raise ValueError(
+                        f"Dimensions exceeded design limits in {address}")
+                    continue
+                cursor[1] += line_height + space_y
+                cursor[0] = cursor_x0
+                line_height = 0
+
+            # Adapts the vertical line difference
+            if line_height < dimensions[1]:
+                line_height = dimensions[1]
+
+            print('coord', center_coord)
+            print('cursor', cursor)
+            dx = cursor[0] - center_coord[0]
+            dy = cursor[1] - center_coord[1]
+            moved_instance = self.move_top_level_footprints(
+                tree, dx, dy)
+            self.move_tracks_and_vias(moved_instance, dx, dy)
+            self.add_pcb(project_path=project_path, pcb_data=moved_instance)
+
+            cursor[0] += dimensions[0] + space_x
 
     def add_pcb(
         self,
         project_path: Path,
-        pcb_path: Path,
+        pcb_data: Sexp,
     ) -> None:
         project_pcb_path = project_path / f"{project_path.name}.kicad_pcb"
         with open(project_pcb_path, "r", encoding="utf-8") as pcb_file:
             project_pcb_data = sexpdata.load(pcb_file)
 
-        with open(pcb_path, "r", encoding="utf-8") as f:
-            pcb_data = sexpdata.load(f)
-
         useful_symbols = ["net", "footprint", "segment", "group"]
-        useful_pcb_data = list(filter(lambda x: str(x[0]) in useful_symbols, pcb_data))
+        useful_pcb_data = list(
+            filter(lambda x: str(x[0]) in useful_symbols, pcb_data))
         self.group_pcb_items(useful_pcb_data)
 
-        pprint.pp(useful_pcb_data)
+        # pprint.pp(useful_pcb_data)
 
         project_pcb_data += useful_pcb_data
 
         with open(project_pcb_path, "w", encoding="utf-8") as pcb_file:
             sexpdata.dump(project_pcb_data, pcb_file)
-
 
     def project_creation(
         self,
@@ -1039,9 +1213,12 @@ class KiCadAPI:
         project_path = PROJECT_FOLDER / project_name
 
         # dependencies
-        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'fp-lib-table', project_path / 'fp-lib-table')
-        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'sym-lib-table', project_path / 'sym-lib-table')
-        self.schematic = KiCadSchematic(f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
+        copy(PROJECT_FOLDER/'src'/'lib-table_templates' /
+             'fp-lib-table', project_path / 'fp-lib-table')
+        copy(PROJECT_FOLDER/'src'/'lib-table_templates' /
+             'sym-lib-table', project_path / 'sym-lib-table')
+        self.schematic = KiCadSchematic(
+            f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
 
         self.schematic.add_hierarchical_sheets(
             project_path,
@@ -1053,11 +1230,15 @@ class KiCadAPI:
             page_for_instance_start=10   # evita conflito com páginas anteriores
         )
 
+        pcb_list = []
         for template in template_list:
             if template.pcb_file is not None:
-                self.add_pcb(project_path, template.pcb_file)
+                pcb_list.append(Path(template.pcb_file))
+        if len(pcb_list) != 0:
+            self.add_multiple_designs(project_path, pcb_list)
 
-        self.schematic.export_schematic(f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
+        self.schematic.export_schematic(
+            f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
 
         return self.schematic
 
