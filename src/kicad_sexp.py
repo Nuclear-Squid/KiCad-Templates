@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import itertools
 import os
 from pathlib import Path
+import re
 from typing import Self
 
 import sexpdata
@@ -14,8 +15,16 @@ class KiCadSexpNode:
     children: list[Self]
 
     def to_str(self, indent_level=0):
-        attributes = ''.join(map(lambda x: f' {x}', self.attributes))
+        def format_attribute(attr):
+            if isinstance(attr, str):
+                attr = attr.replace('"', '\\"').replace("\n", "\\n")
+                if not re.compile('^[a-z_]+$').match(attr):
+                    attr = f'"{attr}"'
+            return f' {attr}'
+
+        attributes = ''.join(map(format_attribute, self.attributes))
         children = ''.join(map(lambda x: f'\n{x.to_str(indent_level + 1)}', self.children))
+
         return f"{"  " * indent_level}({self.name}{attributes}{children})"
 
     def __str__(self):

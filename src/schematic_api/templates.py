@@ -1,6 +1,25 @@
+from dataclasses import dataclass, fields
 from pathlib import Path
+from typing import Self
 
+from kicad_sexp import KiCadSexpNode
+import schematic_api.schematic as sch
 from schematic_api.hierarchical_object import HierarchicalObject
+
+@dataclass
+class Template:
+    schematic: sch.KiCadSchematic
+    pcb: KiCadSexpNode
+    metadata: HierarchicalObject
+
+    @classmethod
+    def from_metadata(cls, meta) -> Self:
+        schematic_data = KiCadSexpNode.read_from_file(meta.sheet_file)
+        schematic = sch.KiCadSchematic(meta.dev_name, schematic_data, [])
+        pcb = KiCadSexpNode.from_sexpdata(["pcb"])
+
+        return cls(schematic, pcb, meta)
+
 
 def load_templates(templates_folder: Path) -> list[HierarchicalObject]:
     result = []

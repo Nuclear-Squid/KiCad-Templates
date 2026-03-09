@@ -1,13 +1,12 @@
 from dataclasses import dataclass, fields
-from os import mkdir
+import os
 from pathlib import Path
 from shutil import copy
-from uuid import uuid4
 import textwrap
 from typing import Self
 
 from kicad_sexp import KiCadSexpNode
-from schematic_api.kicad_api import KiCadSchematic
+from schematic_api.schematic import KiCadSchematic
 from schematic_api.hierarchical_object import HierarchicalObject  # Ajoute cette ligne
 
 PROJECT_FOLDER = Path(__file__).parent.parent.parent
@@ -15,31 +14,18 @@ PROJECT_FOLDER = Path(__file__).parent.parent.parent
 
 @dataclass
 class KiCadProject:
-    project_name: str
-    schematic: KiCadSexpNode
+    project_path: Path
+    schematic: KiCadSchematic
     pcb: KiCadSexpNode
     fp_lib_table: KiCadSexpNode
     sym_lib_table: KiCadSexpNode
     project_raw_json: str
 
-    def __init__(self, project_name: str):
-        self.project_name = project_name
+    def __init__(self, project_path: Path):
+        self.project_path = project_path
+        project_name = os.path.basename(project_path)
 
-        self.schematic = KiCadSexpNode.from_sexpdata([
-            'kicad_sch',
-            ["version", 20250114],
-            ["generator", "eeschema"],
-            ["generator_version", "9.0"],
-            ["uuid", uuid4()],
-            ["paper", "A4"],
-            ["lib_symbols"],
-            ["sheet_instances",
-                ["path", "/",
-                    ["page" "1"],
-                ],
-            ],
-            ["embedded_fonts", "no"],
-        ])
+        self.schematic = KiCadSchematic.new_empty(project_name)
 
         self.pcb = KiCadSexpNode.from_sexpdata([
             "kicad_pcb",
@@ -112,13 +98,16 @@ class KiCadProject:
         return self.__str__()
 
     def write_to_disk(self):
-        project_path = PROJECT_FOLDER / self.project_name
-        mkdir(project_path)
+        project_name = os.path.basename(self.project_path)
+        # project_path = PROJECT_FOLDER / self.project_name
+        os.mkdir(self.project_path)
 
-        with open(project_path / f"{self.project_name}.kicad_pro", "w", encoding="utf-8") as f:
+        with open(self.project_path / f"{project_name}.kicad_pro", "w", encoding="utf-8") as f:
             f.write(self.project_raw_json)
 
-        self.schematic.write_to_file(project_path / f"{self.project_name}.kicad_sch")
-        self.pcb.write_to_file(project_path / f"{self.project_name}.kicad_pcb")
-        self.fp_lib_table.write_to_file(project_path / "fp-lib-table")
-        self.sym_lib_table.write_to_file(project_path / "sym-lib-table")
+        # self.schematic.write_to_file(self.project_path / f"{project_name}.kicad_sch")
+        self.schematic.write_to_disk(self.project_path)
+
+        self.pcb.write_to_file(self.project_path / f"{project_name}.kicad_pcb")
+        self.fp_lib_table.write_to_file(self.project_path / "fp-lib-table")
+        self.sym_lib_table.write_to_file(self.project_path / "sym-lib-table")
