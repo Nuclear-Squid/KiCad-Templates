@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from shutil import copy
 import textwrap
-from typing import Self
+from typing import Self, ClassVar
 
 from kicad_sexp import KiCadSexpNode
 from schematic_api.schematic import KiCadSchematic
@@ -19,6 +19,8 @@ class KiCadProject:
     fp_lib_table: KiCadSexpNode
     sym_lib_table: KiCadSexpNode
     project_raw_json: str
+
+    template_folders: ClassVar[list[Path]] = [ PROJECT_FOLDER / "subsystems" ]
 
     def __init__(self, project_path: Path):
         self.project_path = project_path

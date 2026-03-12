@@ -1,4 +1,4 @@
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, field
 import os
 from pathlib import Path
 import shutil
@@ -14,7 +14,7 @@ Number = int | float
 class KiCadSchematic:
     name: str
     data: KiCadSexpNode
-    subsheets: list[Self]
+    subsheets: list[Self] = field(default_factory=list)
 
     def __str__(self):
         return ''.join(map(lambda field: f"{field.name}:\n{getattr(self, field.name)}\n\n", fields(self)))
@@ -126,8 +126,40 @@ class KiCadSchematic:
         self.data.get_child("sheet_instances", max_depth=1).append([
             "path",
             f"/{root_uuid(self.data)}/{root_uuid(sheet)}",
-            ["page", f"{page_for_instance}"]
+            ["page", page_for_instance]
         ])
 
         self.data.append(sheet)
         self.subsheets.append(schematic)
+
+
+    def add_hierarchical_sheets(
+        self,
+        templates,  # type = Template
+        origin_xy: tuple[Number, Number] = (20, 20),  # inches
+        max_row_width_mm: Number = 180,
+        start_page_instance: int = 2,
+        h_gap: Number = 8 * 2.54,
+        v_gap: Number = 8 * 2.54,
+    ):
+        cursor_x = row_left_edge = float(origin_xy[0])
+        cursor_y = float(origin_xy[1])
+        row_height = 0
+
+        for i, t in enumerate(templates):
+            width  = float(t.metadata.size_wh[0])
+            height = float(t.metadata.size_wh[1])
+            row_height = max(row_height, height)
+
+            self.add_hierarchical_sheet(
+                t.schematic,
+                t.metadata,
+                (cursor_x, cursor_y),
+                page_for_instance = str(start_page_instance + i),
+            )
+
+            cursor_x += width + h_gap
+            if cursor_x + width > row_left_edge + float(max_row_width_mm):
+                cursor_x = row_left_edge
+                cursor_y = cursor_y + height + v_gap
+                row_height = 0

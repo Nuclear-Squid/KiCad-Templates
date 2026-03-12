@@ -47,28 +47,48 @@ class Template:
     metadata: TemplateMetadata
 
     @classmethod
-    def from_metadata(cls, meta) -> Self:
-        schematic_data = KiCadSexpNode.read_from_file(meta.sheet_file)
-        schematic = sch.KiCadSchematic(meta.dev_name, schematic_data, [])
+    def from_path_to_folder(cls, path: Path) -> Self:
+        metadata = TemplateMetadata.load_from_yaml(path / "meta.yaml")
+        schematic = sch.KiCadSchematic(
+            metadata.dev_name,
+            KiCadSexpNode.read_from_file(metadata.sheet_file)
+        )
         pcb = KiCadSexpNode.from_sexpdata(["pcb"])
-
-        return cls(schematic, pcb, meta)
-
-
-def load_templates(templates_folder: Path) -> list[TemplateMetadata]:
-    result = []
-    for path in templates_folder.iterdir():
-        template = TemplateMetadata.load_from_yaml(path / "meta.yaml")
-        if template is None:
-            print(f"Warning: could not load template '{template}'")
-            continue
-
-        result.append(template)
-    return result
+        return cls(schematic, pcb, metadata)
 
 
-def find_template(name: str, templates: list[TemplateMetadata]) -> TemplateMetadata | None:
-    for t in templates:
-        if t.dev_name == name:
-            return t
-    return None
+    @classmethod
+    def list_templates(cls, templates_folders: list[Path]) -> list[str]:
+        result = []
+        for folder in templates_folders:
+            for path in folder.iterdir():
+                # Check template is valid by trying to parse the metadata file
+                template = TemplateMetadata.load_from_yaml(path / "meta.yaml")
+                if template is None:
+                    print(f"Warning: could not load template '{template}'")
+                    continue
+                result.append(path)
+        return result
+
+
+    @classmethod
+    def get_template(cls, name: str, templates_folders: list[Path]) -> Self | None:
+        for folder in templates_folders:
+            for template in folder.iterdir():
+                if basename(template) == name:
+                    return cls.from_path_to_folder(template)
+        return None
+
+
+    @classmethod
+    def get_templates(cls, template_names: list[str], templates_folders: list[Path]) -> list[Self]:
+        result = []
+        for name in template_names:
+            template = cls.get_template(name, templates_folders)
+            if template is None:
+                print(f"Warning: could not find template '{name}'")
+                continue
+
+            result.append(template)
+
+        return result
