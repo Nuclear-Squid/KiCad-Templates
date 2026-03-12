@@ -44,11 +44,14 @@ class KiCadSchematic:
         return cls(name, data, [])
 
 
-    @classmethod
-    def new_sheet(cls, sheet_name, sheet_file, width, height, x, y) -> Self:
-        return KiCadSexpNode.from_sexpdata([
+    @classmethod  # metadata is type TemplateMetadata
+    def new_sheet(cls, metadata, position: tuple[Number, Number]) -> Self:
+        width = float(metadata.size_wh[0])
+        height = float(metadata.size_wh[1])
+
+        sheet = KiCadSexpNode.from_sexpdata([
             "sheet",
-            ["at", x, y],
+            ["at", position[0], position[1]],
             ["size", width, height],
             ["fields_autoplaced"],
             ["stroke",
@@ -58,23 +61,29 @@ class KiCadSchematic:
             ],
             ["fill", ["color", 0, 0, 0, 0.0]],
             ["uuid", uuid4()],
-            ["property", "Sheet name", sheet_name,
+            ["property", "Sheet name", metadata.sheet_name,
                 ["id", 0],
-                ["at", x + 2.0, y - 2.0, 0],
+                ["at", position[0] + 2.0, position[1] - 2.0, 0],
                 ["effects",
                     ["font", ["size", 1.27, 1.27]],
                     ["justify", "left"],
                 ],
             ],
-            ["property", "Sheet file", os.path.basename(sheet_file),
+            ["property", "Sheet file", os.path.basename(metadata.sheet_file),
                 ["id", 1],
-                ["at", x + 2.0, y + 2.0, 0],
+                ["at", position[0] + 2.0, position[1] + 2.0, 0],
                 ["effects",
                     ["font", ["size", 1.27, 1.27]],
                     ["justify", "left"],
                 ],
             ],
         ])
+
+        # Extra properties
+        for k, v in metadata.properties.items():
+            sheet.append(KiCadSexpNode.make_property(k, v, position, hide=True))
+
+        return sheet
 
 
     def write_to_disk(self, project_path: Path):
@@ -98,19 +107,7 @@ class KiCadSchematic:
     ):
         width = float(metadata.size_wh[0])
         height = float(metadata.size_wh[1])
-
-        sheet = self.new_sheet(
-            metadata.sheet_name,
-            metadata.sheet_file,
-            width,
-            height,
-            position[0],
-            position[1]
-        )
-
-        # Extra properties
-        for k, v in metadata.properties.items():
-            sheet.append(KiCadSexpNode.make_property(k, v, position, hide=True))
+        sheet = self.new_sheet(metadata, position)
 
         def place_pins(pin_list, pos_x, pos_y, label_x_offset):
             start_height = position[1] + (height - len(pin_list)  * 2.54)  / 2
@@ -124,30 +121,14 @@ class KiCadSchematic:
         place_pins(metadata.left_pins,  position[0], position[1], -net_wire_len_mm)
         place_pins(metadata.right_pins, position[0] + width, position[1],  net_wire_len_mm)
 
-        # # ---- Inserção do sheet ----
-        # self.data.append_sexp(sheet)
-        self.data.append(sheet)
-
-        #   4) sheet_instances
         root_uuid = self.data.get_child("uuid", max_depth=1).attributes[0]
-        si = self.data.get_child("sheet_instances", max_depth=1)
-
-        has_root = False
-        for path in self.data.iter_children_with_name("path"):
-            if path.attributes[0] == "/":
-                has_root = True
-                break
-
-        if not has_root:
-            si.append(["path", "/", ["page", "1"]])
-
-        # Corrigido: path de folha filha deve incluir root_uuid
-        si.append([
+        self.data.get_child("sheet_instances", max_depth=1).append([
             "path",
             f"/{root_uuid}/{sheet.get_child("uuid")}",
             ["page", f"{page_for_instance}"]
         ])
 
+        self.data.append(sheet)
         self.subsheets.append(schematic)
 
         return
