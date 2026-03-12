@@ -16,7 +16,8 @@ class HierarchicalObject:
         at_xy,
         size_wh,
         properties=None,
-        pins=None,
+        left_pins=None,
+        right_pins=None,
     ):
         self.dev_name = dev_name
         self.sheet_name = sheet_name
@@ -25,7 +26,8 @@ class HierarchicalObject:
         self.at_xy = at_xy
         self.size_wh = size_wh
         self.properties = properties
-        self.pins = pins
+        self.left_pins = left_pins
+        self.right_pins = right_pins
 
     def __str__(self):
         return dedent(f"""
@@ -54,6 +56,7 @@ class HierarchicalObject:
                 at_xy=meta["at_xy"],
                 size_wh=meta["size_wh"],
                 properties=meta["properties"],
-                pins=meta["pins"],
+                left_pins=meta.get("left_pins", None),
+                right_pins=meta.get("right_pins", None),
             )
         return None

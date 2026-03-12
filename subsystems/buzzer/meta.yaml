@@ -6,7 +6,7 @@ size_wh: [30, 20]
 properties:
   Comment: Buzzer
 
-pins:
+left_pins:
   - name: BUZZER_PIN
     type: input
     net:  BUZZER

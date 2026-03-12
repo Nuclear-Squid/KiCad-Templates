@@ -7,7 +7,7 @@ size_wh: [30,20]
 properties:
   Comment: MikroBUS Interface
 
-pins:
+left_pins:
   - name: SDA
     type: bidirectional
     net: SDA
@@ -15,14 +15,6 @@ pins:
   - name: SCL
     type: bidirectional
     net: SCL
-
-  - name: INT
-    type: input
-    net: INT_MK
-
-  - name: RESET
-    type: input
-    net: RESET_MK
 
   - name: CS
     type: bidirectional
@@ -39,6 +31,15 @@ pins:
   - name: MISO
     type: bidirectional
     net: MISO
+
+right_pins:
+  - name: INT
+    type: input
+    net: INT_MK
+
+  - name: RESET
+    type: input
+    net: RESET_MK
 
   - name: PWM
     type: bidirectional

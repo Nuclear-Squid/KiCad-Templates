@@ -71,7 +71,10 @@ def quick_test():
     can_buffer_template = templates.Template.from_metadata(can_buffer_meta)
 
     project = KiCadProject(PROJECT_FOLDER / 'test')
-    project.schematic.add_hierarchical_sheet(can_buffer_template)
+    project.schematic.add_hierarchical_sheet(
+        can_buffer_template.schematic,
+        can_buffer_template.metadata
+    )
     project.write_to_disk()
 
 if __name__ == "__main__":

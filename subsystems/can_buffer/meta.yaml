@@ -6,7 +6,16 @@ size_wh: [30, 20]
 properties:
   Comment: CAN Buffer
 
-pins:
+left_pins:
+  - name: CAN_TX
+    type: bidirectional
+    net: CAN_TX
+
+  - name: CAN_RX
+    type: bidirectional
+    net: CAN_RX
+
+right_pins:
   - name: CAN_H
     type: bidirectional
     net: CAN_H
@@ -15,10 +24,3 @@ pins:
     type: bidirectional
     net: CAN_L
 
-  - name: CAN_TX
-    type: bidirectional
-    net: CAN_TX
-
-  - name: CAN_RX
-    type: bidirectional
-    net: CAN_RX
