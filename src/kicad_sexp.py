@@ -105,13 +105,13 @@ class KiCadSexpNode:
                 ["uuid", uuid4()]])
 
     @classmethod
-    def make_pin(cls, name: str, pin_type: str, x: float, y: float) -> Self:
+    def make_pin(cls, name: str, pin_type: str, x: float, y: float, rotation: float, justify: str) -> Self:
         return cls.from_sexpdata(
             ["pin", name, pin_type,
-                ["at", x, y, 0],
+                ["at", x, y, rotation],
                 ["effects",
                     ["font", ["size", 1.27, 1.27]],
-                    ["justify", "right"],
+                    ["justify", justify],
                 ],
                 ["uuid", uuid4()]])
 

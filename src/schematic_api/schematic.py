@@ -109,26 +109,25 @@ class KiCadSchematic:
         height = float(metadata.size_wh[1])
         sheet = self.new_sheet(metadata, position)
 
-        def place_pins(pin_list, pos_x, pos_y, label_x_offset):
+        def place_pins(pin_list, pos_x, pos_y, rotation, label_x_offset, justify_label):
+            justify_pin = "right" if justify_label == "left" else "left"
             start_height = position[1] + (height - len(pin_list)  * 2.54)  / 2
             for i, pin in enumerate(pin_list):
                 pos_y = start_height + i * 2.54
                 x_end = pos_x + float(label_x_offset)
-                sheet.append(KiCadSexpNode.make_pin(pin.name, pin.type, pos_x, pos_y))
+                sheet.append(KiCadSexpNode.make_pin(pin.name, pin.type, pos_x, pos_y, rotation, justify_pin))
                 self.data.append(KiCadSexpNode.make_wire(pos_x, pos_y, x_end, pos_y))
-                self.data.append(KiCadSexpNode.make_label(pin.net, x_end, pos_y, "right"))
+                self.data.append(KiCadSexpNode.make_label(pin.net, x_end, pos_y, justify_label))
 
-        place_pins(metadata.left_pins,  position[0], position[1], -net_wire_len_mm)
-        place_pins(metadata.right_pins, position[0] + width, position[1],  net_wire_len_mm)
+        place_pins(metadata.left_pins,  position[0],         position[1], 180, -net_wire_len_mm, "right")
+        place_pins(metadata.right_pins, position[0] + width, position[1],   0,  net_wire_len_mm, "left")
 
-        root_uuid = self.data.get_child("uuid", max_depth=1).attributes[0]
+        root_uuid = lambda x: x.get_child("uuid", max_depth=1).attributes[0]
         self.data.get_child("sheet_instances", max_depth=1).append([
             "path",
-            f"/{root_uuid}/{sheet.get_child("uuid")}",
+            f"/{root_uuid(self.data)}/{root_uuid(sheet)}",
             ["page", f"{page_for_instance}"]
         ])
 
         self.data.append(sheet)
         self.subsheets.append(schematic)
-
-        return
