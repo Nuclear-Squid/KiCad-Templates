@@ -116,10 +116,10 @@ class KiCadSexpNode:
                 ["uuid", uuid4()]])
 
     @classmethod
-    def make_property(cls, key: str, value: str, x: float, y: float, hide: bool = False) -> Self:
+    def make_property(cls, key: str, value: str, pos: tuple[float, float], hide: bool = False) -> Self:
         return cls.from_sexpdata(
             ["property", key, value,
-                ["at", x, y, 0],
+                ["at", pos[0], pos[1], 0],
                 ["effects",
                     ["font", ["size", 1.27, 1.27]],
                     ["hide", "yes" if hide else "no"]]])

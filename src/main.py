@@ -63,6 +63,7 @@ def new(project_name: str, template_names: tuple[str, ...]):
 
 @cli.command()
 def quick_test():
+    # templates.TemplateMetadata.load_from_yaml(SUBSYSTEM_FOLDER / 'can_buffer' / 'meta.yaml')
     data = KiCadSexpNode.read_from_file(SUBSYSTEM_FOLDER / 'can_buffer' / 'can_buffer.kicad_sch')
     sheet = KiCadSchematic("can_buffer", data, [])
 
@@ -73,7 +74,8 @@ def quick_test():
     project = KiCadProject(PROJECT_FOLDER / 'test')
     project.schematic.add_hierarchical_sheet(
         can_buffer_template.schematic,
-        can_buffer_template.metadata
+        can_buffer_template.metadata,
+        (100, 100)
     )
     project.write_to_disk()
 

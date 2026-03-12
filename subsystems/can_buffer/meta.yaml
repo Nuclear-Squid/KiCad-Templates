@@ -3,6 +3,7 @@ sheet_file: can_buffer.kicad_sch
 pcb_file: can_buffer.kicad_pcb
 at_xy: [0, 0]
 size_wh: [30, 20]
+
 properties:
   Comment: CAN Buffer
 

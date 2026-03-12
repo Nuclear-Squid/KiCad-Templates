@@ -7,7 +7,6 @@ from typing import Self
 
 from kicad_sexp import KiCadSexpNode
 from schematic_api.schematic import KiCadSchematic
-from schematic_api.hierarchical_object import HierarchicalObject  # Ajoute cette ligne
 
 PROJECT_FOLDER = Path(__file__).parent.parent.parent
 

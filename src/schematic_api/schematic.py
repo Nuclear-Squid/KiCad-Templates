@@ -2,11 +2,12 @@ from dataclasses import dataclass, fields
 import os
 from pathlib import Path
 import shutil
-from typing import Self
+from typing import Self, TYPE_CHECKING
 from uuid import uuid4
 
 from kicad_sexp import KiCadSexpNode
 from schematic_api.hierarchical_object import HierarchicalObject
+# from schematic_api.templates import TemplateMetadata
 
 Number = int | float
 
@@ -91,7 +92,7 @@ class KiCadSchematic:
     def add_hierarchical_sheet(
         self,
         schematic: Self,
-        metadata: HierarchicalObject,
+        metadata, # type = TemplateMetadata,
         position: tuple[Number, Number],
         page_for_instance: str = "2",
         net_wire_len_mm: float = 5.0,    # length of wire from pin to net label
@@ -123,10 +124,6 @@ class KiCadSchematic:
         for k, v in props.items():
             sheet.append(KiCadSexpNode.make_property(k, v, position, hide=True))
 
-        #   3) Pins
-        left_pin_positions = []   # [(pin_dict, (x,y))]
-        right_pin_positions = []  # [(pin_dict, (x,y))]
-
         pin_indexes_left  = range(len(left_pins))
         pin_indexes_right = range(len(right_pins))
 
@@ -138,36 +135,22 @@ class KiCadSchematic:
 
         # Left: angle 180
         for pin, y in zip(left_pins, ys_left):
-            name = pin.get("name", "IN")
-            ptype = pin.get("type", "input")
-            sheet.append(KiCadSexpNode.make_pin(name, ptype, x_left, y))
-
-            net = pin.get("net")
-            if not net:
-                continue
-
-            x2 = x_left - float(net_wire_len_mm)
-            self.data.children.append(KiCadSexpNode.make_wire(x_left, y, x2, y))
-            self.data.children.append(KiCadSexpNode.make_label(net, x2, y, "right"))
+            x_end = x_left - float(net_wire_len_mm)
+            sheet.append(KiCadSexpNode.make_pin(pin.name, pin.type, x_left, y))
+            self.data.append(KiCadSexpNode.make_wire(x_left, y, x_end, y))
+            self.data.append(KiCadSexpNode.make_label(pin.net, x_end, y, "right"))
 
         # Right: angle 0
         for p, y in zip(right_pins, ys_right):
-            name = p.get("name", "OUT")
-            ptype = p.get("type", "output")
-            sheet.append(KiCadSexpNode.make_pin(name, ptype, x_right, y))
-
-            net = p.get("net")
-            if not net:
-                continue
-
-            x2 = x_right + float(net_wire_len_mm)
-            self.data.children.append(KiCadSexpNode.make_wire(x_right, y, x2, y))
-            self.data.children.append(KiCadSexpNode.make_label(net, x2, y, "left"))
+            x_end = x_right + float(net_wire_len_mm)
+            sheet.append(KiCadSexpNode.make_pin(pin.name, pin.type, x_right, y))
+            self.data.append(KiCadSexpNode.make_wire(x_right, y, x_end, y))
+            self.data.append(KiCadSexpNode.make_label(pin.net, x_end, y, "left"))
 
 
         # # ---- Inserção do sheet ----
         # self.data.append_sexp(sheet)
-        self.data.children.append(sheet)
+        self.data.append(sheet)
 
         #   4) sheet_instances
         root_uuid = self.data.get_child("uuid", max_depth=1).attributes[0]
