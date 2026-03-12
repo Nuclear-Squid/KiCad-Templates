@@ -1,5 +1,6 @@
 sheet_name :  ACC_MAG
 sheet_file: acc_mag.kicad_sch
+pcb_file: acc_mag.kicad_pcb
 at_xy: [0, 0]
 size_wh: [30, 20]
 
