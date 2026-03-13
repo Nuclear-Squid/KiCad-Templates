@@ -1,19 +1,14 @@
-import os
+from copy import deepcopy
+from os.path import basename
 from pathlib import Path
 
 import click
 import sexpdata
 
 from kicad_sexp import KiCadSexpNode
-import schematic_api.templates as templates
+from schematic_api.templates import Template
 from schematic_api.project import KiCadProject
 from schematic_api.schematic import KiCadSchematic
-
-PROJECT_FOLDER = Path(__file__).parent.parent
-SUBSYSTEM_FOLDER = PROJECT_FOLDER / "subsystems"
-
-DEVICE_LIB_PATH = "/usr/share/kicad/symbols/Device.kicad_sym"  # Change it somehow
-
 
 def error(msg):
     click.echo(click.style("Error: ", fg="red") + msg)
@@ -27,57 +22,33 @@ def cli():
 # List available templates
 @cli.command()
 def list():
-    for path in SUBSYSTEM_FOLDER.iterdir():
-        template_name = os.path.basename(path)
-        click.echo(template_name)
+    print(
+        "Available templates are:",
+        *Template.list_templates(KiCadProject.template_folders),
+        sep="\n  - "
+    )
 
 
 # Create new project with specified templates
 @cli.command()
-@click.argument("project_name")
+@click.argument("project_path", type=Path)
 @click.argument("template_names", nargs=-1)
-def new(project_name: str, template_names: tuple[str, ...]):
-    subsystems = templates.load_templates(SUBSYSTEM_FOLDER)
-
-    # TODO: limit project name to valid characters and length for KiCad
+def new(project_path: Path, template_names: tuple[str, ...]):
+    # # TODO: limit project name to valid characters and length for KiCad
+    project_name = basename(project_path)
     for character in project_name:
         if not character.isalnum() and character not in ('-', '_'):
             error("le nom du projet ne doit contenir que des lettres, chiffres, tirets ou underscores.")
             return
 
-    blocks = []
-    for name in template_names:
-        t = templates.find_template(name, subsystems)
-        if t is None:
-            error(f"Could not find template '{name}'")
-            return
-        blocks.append(t)
+    templates = Template.get_templates(template_names, KiCadProject.template_folders)
 
-    # print(blocks)
-
-    # create_project(project_name, blocks)
-    # KiCadProject(project_name).write_to_disk()
-    # project = KiCadProject(project_name)
-    # project.write_to_disk()
-
-
-@cli.command()
-def quick_test():
-    # templates.TemplateMetadata.load_from_yaml(SUBSYSTEM_FOLDER / 'can_buffer' / 'meta.yaml')
-    data = KiCadSexpNode.read_from_file(SUBSYSTEM_FOLDER / 'can_buffer' / 'can_buffer.kicad_sch')
-    sheet = KiCadSchematic("can_buffer", data, [])
-
-    subsystems = templates.load_templates(SUBSYSTEM_FOLDER)
-    can_buffer_meta = templates.find_template('can_buffer', subsystems)
-    can_buffer_template = templates.Template.from_metadata(can_buffer_meta)
-
-    project = KiCadProject(PROJECT_FOLDER / 'test')
-    project.schematic.add_hierarchical_sheet(
-        can_buffer_template.schematic,
-        can_buffer_template.metadata,
-        (100, 100)
-    )
+    project = KiCadProject(project_path)
+    project.schematic.add_hierarchical_sheets(templates)
     project.write_to_disk()
+
+    print(f"Successfully created project '{project_name}'")
+
 
 if __name__ == "__main__":
     cli()

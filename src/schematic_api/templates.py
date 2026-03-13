@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from dataclasses import dataclass, fields, field
 from os.path import basename
 from pathlib import Path
@@ -67,7 +68,7 @@ class Template:
                 if template is None:
                     print(f"Warning: could not load template '{template}'")
                     continue
-                result.append(path)
+                result.append(basename(path))
         return result
 
 
@@ -81,7 +82,7 @@ class Template:
 
 
     @classmethod
-    def get_templates(cls, template_names: list[str], templates_folders: list[Path]) -> list[Self]:
+    def get_templates(cls, template_names: Iterable[str], templates_folders: list[Path]) -> list[Self]:
         result = []
         for name in template_names:
             template = cls.get_template(name, templates_folders)
