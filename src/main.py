@@ -6,9 +6,9 @@ import click
 import sexpdata
 
 from kicad_sexp import KiCadSexpNode
-from schematic_api.templates import Template
-from schematic_api.project import KiCadProject
-from schematic_api.schematic import KiCadSchematic
+from templates import Template
+from project import KiCadProject
+from schematic import KiCadSchematic
 
 def error(msg):
     click.echo(click.style("Error: ", fg="red") + msg)

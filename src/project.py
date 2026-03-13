@@ -6,9 +6,9 @@ import textwrap
 from typing import Self, ClassVar
 
 from kicad_sexp import KiCadSexpNode
-from schematic_api.schematic import KiCadSchematic
+from schematic import KiCadSchematic
 
-PROJECT_FOLDER = Path(__file__).parent.parent.parent
+PROJECT_FOLDER = Path(__file__).parent.parent
 
 
 @dataclass
