@@ -1,6 +1,7 @@
 import sexpdata
 from sexpdata import loads, dumps, Symbol
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Any
+from dataclasses import dataclass, field
 from shutil import copy
 from pathlib import Path
 import re
@@ -8,13 +9,31 @@ import os
 import glob
 import uuid
 import pprint
-
+from copy import deepcopy
 
 from schematic_api.project_builder import project_builder
 from schematic_api.hierarchical_object import HierarchicalObject  # Ajoute cette ligne
 
 
 PROJECT_FOLDER = Path(__file__).parent.parent.parent
+Sexp = Union[Symbol, str, int, float, List["Sexp"]]
+
+
+@dataclass
+class InstantiatedSubsystem:
+    # Represents one concrete copy of a reusable subsystem inside a project.
+    dev_name: str
+    sheet_name: str
+    sheet_file: Path
+    pcb_file: Path | None
+    at_xy: list[float]
+    size_wh: list[float]
+    properties: dict | None = None
+    pins: list | None = None
+    schematic_data: list[Any] = field(default_factory=list)
+    reference_map: dict[str, str] = field(default_factory=dict)
+    schematic_uuid_map: dict[str, str] = field(default_factory=dict)
+    symbol_reference_map: dict[str, str] = field(default_factory=dict)
 
 
 def _format_sexp_kicad(data, indent=0) -> str:
@@ -424,15 +443,15 @@ class KiCadSchematic:
 
         has_root = any(
             isinstance(e, list) and e and e[0] == Symbol(
-                "path") and str(e[1]) == '"/"'
+                "path") and str(e[1]).strip('"') == "/"
             for e in si[1:]
         )
         if not has_root:
-            si.append([Symbol("path"), '"/"', [Symbol("page"), '"1"']])
+            si.append([Symbol("path"), "/", [Symbol("page"), "1"]])
 
         # Corrigido: path de folha filha deve incluir root_uuid
-        si.append([Symbol("path"), f'"/{root_uuid}/{sheet_uuid}"',
-                  [Symbol("page"), f'"{page_for_instance}"']])
+        si.append([Symbol("path"), f"/{root_uuid}/{sheet_uuid}",
+                  [Symbol("page"), str(page_for_instance)]])
 
         #   5) NET LABELS (optional): create wires + labels for pin nets
         def _add_wire(x1, y1, x2, y2):
@@ -475,9 +494,6 @@ class KiCadSchematic:
             y2 = py
             _add_wire(px, py, x2, y2)
             _add_label(str(net), x2, y2, "left")
-
-        # 6) Copy the actual sheet file into the correct place
-        copy(object.sheet_file, project_path / os.path.basename(object.sheet_file))
 
         return {"sheet_uuid": sheet_uuid, "root_uuid": root_uuid}
 
@@ -542,6 +558,7 @@ class KiCadSchematic:
             placed.append({
                 "object": obj,
                 "sheet_uuid": meta.get("sheet_uuid"),
+                "root_uuid": meta.get("root_uuid"),
                 "at_xy": tuple(obj.at_xy),
                 "size_wh": tuple(obj.size_wh),
                 "page": page_num
@@ -931,6 +948,9 @@ class KiCadPCB:
         with open(file_path, "r", encoding="utf-8") as f:
             self.data = loads(f.read())
 
+    def _format_sexp(self, data, indent=0) -> str:
+        return _format_sexp_kicad(data, indent)
+
     def export_pcb(self, output_path: str) -> None:
         """Exporte le PCB vers un fichier, avec un formatage lisible."""
         with open(output_path, "w", encoding="utf-8") as f:
@@ -968,6 +988,464 @@ class KiCadAPI:
         self.schematic = None
         self.pcb = None
 
+    def _build_unique_name(self, base_name: str, occurrence: int) -> str:
+        return base_name if occurrence == 1 else f"{base_name}_{occurrence}"
+
+    def _clone_with_new_uuids(
+        self,
+        node: Sexp,
+        uuid_map: Optional[dict[str, str]] = None,
+    ) -> tuple[Sexp, dict[str, str]]:
+        # Clone the whole KiCad tree while regenerating every UUID once.
+        if uuid_map is None:
+            uuid_map = {}
+
+        if isinstance(node, list):
+            if node and node[0] == Symbol("uuid") and len(node) >= 2 and isinstance(node[1], str):
+                old_uuid = node[1].strip('"')
+                new_uuid = uuid_map.setdefault(old_uuid, str(uuid.uuid4()))
+                return [node[0], new_uuid, *node[2:]], uuid_map
+
+            cloned = []
+            for child in node:
+                cloned_child, uuid_map = self._clone_with_new_uuids(
+                    child, uuid_map)
+                cloned.append(cloned_child)
+            return cloned, uuid_map
+
+        return deepcopy(node), uuid_map
+
+    def _replace_group_member_uuids(
+        self,
+        node: Sexp,
+        uuid_map: dict[str, str],
+    ) -> None:
+        # KiCad groups store member UUIDs separately, so they need a second pass.
+        if not isinstance(node, list):
+            return
+
+        if node and node[0] == Symbol("group"):
+            for child in node[1:]:
+                if isinstance(child, list) and child and child[0] == Symbol("members"):
+                    for i in range(1, len(child)):
+                        member_uuid = str(child[i]).strip('"')
+                        if member_uuid in uuid_map:
+                            child[i] = uuid_map[member_uuid]
+
+        for child in node:
+            if isinstance(child, list):
+                self._replace_group_member_uuids(child, uuid_map)
+
+    def _get_property_node(self, node: list[Any], property_name: str) -> list[Any] | None:
+        # Utility to fetch a KiCad property entry by name.
+        for child in node:
+            if (
+                isinstance(child, list)
+                and child
+                and child[0] == Symbol("property")
+                and len(child) > 2
+                and child[1] == property_name
+            ):
+                return child
+        return None
+
+    def _get_symbol_reference(self, symbol_node: list[Any]) -> str | None:
+        prop = self._get_property_node(symbol_node, "Reference")
+        if prop is not None and len(prop) > 2 and isinstance(prop[2], str):
+            return prop[2]
+        return None
+
+    def _get_symbol_uuid(self, symbol_node: list[Any]) -> str | None:
+        for child in symbol_node:
+            if (
+                isinstance(child, list)
+                and child
+                and child[0] == Symbol("uuid")
+                and len(child) > 1
+                and isinstance(child[1], str)
+            ):
+                return child[1].strip('"')
+        return None
+
+    def _get_symbol_unit(self, symbol_node: list[Any]) -> int:
+        for child in symbol_node:
+            if (
+                isinstance(child, list)
+                and child
+                and child[0] == Symbol("unit")
+                and len(child) > 1
+                and isinstance(child[1], (int, float))
+            ):
+                return int(child[1])
+        return 1
+
+    def _set_symbol_instances(
+        self,
+        symbol_node: list[Any],
+        project_name: str,
+        instance_path: str,
+        reference: str,
+    ) -> None:
+        # Rewrite the instances block so the cloned sheet points to its new path.
+        unit = self._get_symbol_unit(symbol_node)
+        instances_block = [
+            Symbol("instances"),
+            [
+                Symbol("project"),
+                project_name,
+                [
+                    Symbol("path"),
+                    instance_path,
+                    [Symbol("reference"), reference],
+                    [Symbol("unit"), unit],
+                ],
+            ],
+        ]
+
+        for i, child in enumerate(symbol_node):
+            if isinstance(child, list) and child and child[0] == Symbol("instances"):
+                symbol_node[i] = instances_block
+                return
+
+        symbol_node.append(instances_block)
+
+    def _allocate_reference(
+        self,
+        original_ref: str,
+        ref_counters: dict[str, int],
+    ) -> str:
+        # Keep numbering global per prefix so repeated subsystems never collide.
+        match = re.match(r"^([^0-9]*?)(\d+)$", original_ref)
+        if match:
+            prefix, digits = match.groups()
+            width = len(digits)
+        else:
+            prefix = original_ref
+            width = 0
+
+        ref_counters[prefix] = ref_counters.get(prefix, 0) + 1
+        next_value = ref_counters[prefix]
+        if width > 0:
+            return f"{prefix}{str(next_value).zfill(width)}"
+        return f"{prefix}{next_value}"
+
+    def _instantiate_subsystem(
+        self,
+        template: HierarchicalObject,
+        project_path: Path,
+        occurrence: int,
+        ref_counters: dict[str, int],
+    ) -> InstantiatedSubsystem:
+        # Build a per-instance copy of the subsystem with unique filenames,
+        # fresh UUIDs, and an annotation map we can later reuse for the PCB.
+        source_sheet = Path(template.sheet_file)
+        sheet_name = self._build_unique_name(template.sheet_name, occurrence)
+        sheet_filename = self._build_unique_name(source_sheet.stem, occurrence) + source_sheet.suffix
+        target_sheet = project_path / sheet_filename
+
+        schematic_source = loads(source_sheet.read_text(encoding="utf-8"))
+        source_symbols = [
+            node for node in schematic_source
+            if isinstance(node, list) and node and node[0] == Symbol("symbol")
+        ]
+        units_by_reference: dict[str, set[int]] = {}
+        for source_node in source_symbols:
+            original_ref = self._get_symbol_reference(source_node)
+            if not original_ref:
+                continue
+            units_by_reference.setdefault(original_ref, set()).add(
+                self._get_symbol_unit(source_node))
+        multi_unit_refs = {
+            ref for ref, units in units_by_reference.items() if len(units) > 1
+        }
+        schematic_data, schematic_uuid_map = self._clone_with_new_uuids(
+            schematic_source)
+        cloned_symbols = [
+            node for node in schematic_data
+            if isinstance(node, list) and node and node[0] == Symbol("symbol")
+        ]
+
+        instance_ref_map: dict[str, str] = {}
+        symbol_reference_map: dict[str, str] = {}
+        for source_node, cloned_node in zip(source_symbols, cloned_symbols):
+            node = cloned_node
+            original_ref = self._get_symbol_reference(node)
+            if not original_ref:
+                continue
+
+            if original_ref in multi_unit_refs:
+                new_ref = instance_ref_map.get(original_ref)
+            else:
+                new_ref = None
+
+            if new_ref is None:
+                new_ref = self._allocate_reference(original_ref, ref_counters)
+                instance_ref_map.setdefault(original_ref, new_ref)
+
+            # Update the schematic symbol itself and remember the UUID -> ref link
+            # so the PCB can rename the matching footprint later.
+            ref_property = self._get_property_node(node, "Reference")
+            if ref_property is not None:
+                ref_property[2] = new_ref
+
+            source_symbol_uuid = self._get_symbol_uuid(source_node)
+            if source_symbol_uuid:
+                symbol_reference_map[source_symbol_uuid] = new_ref
+
+        pcb_file = Path(template.pcb_file) if template.pcb_file is not None else None
+        return InstantiatedSubsystem(
+            dev_name=template.dev_name,
+            sheet_name=sheet_name,
+            sheet_file=target_sheet,
+            pcb_file=pcb_file,
+            at_xy=list(template.at_xy),
+            size_wh=list(template.size_wh),
+            properties=deepcopy(template.properties),
+            pins=deepcopy(template.pins),
+            schematic_data=schematic_data,
+            reference_map=instance_ref_map,
+            schematic_uuid_map=schematic_uuid_map,
+            symbol_reference_map=symbol_reference_map,
+        )
+
+    def _instantiate_subsystems(
+        self,
+        project_path: Path,
+        templates: list[HierarchicalObject],
+    ) -> list[InstantiatedSubsystem]:
+        # Repeated templates become independent instances with stable numbering.
+        ref_counters: dict[str, int] = {}
+        occurrences: dict[str, int] = {}
+        instances = []
+
+        for template in templates:
+            key = str(Path(template.sheet_file))
+            occurrences[key] = occurrences.get(key, 0) + 1
+            instances.append(
+                self._instantiate_subsystem(
+                    template=template,
+                    project_path=project_path,
+                    occurrence=occurrences[key],
+                    ref_counters=ref_counters,
+                )
+            )
+
+        return instances
+
+    def _write_instantiated_schematic(
+        self,
+        instance: InstantiatedSubsystem,
+        project_name: str,
+        root_uuid: str,
+        sheet_uuid: str,
+    ) -> None:
+        # Persist the cloned child schematic after patching its instance path.
+        instance_path = f"/{root_uuid}/{sheet_uuid}"
+        schematic_data = deepcopy(instance.schematic_data)
+
+        for node in schematic_data:
+            if not (isinstance(node, list) and node and node[0] == Symbol("symbol")):
+                continue
+
+            reference = self._get_symbol_reference(node)
+            if not reference:
+                continue
+
+            self._set_symbol_instances(
+                symbol_node=node,
+                project_name=project_name,
+                instance_path=instance_path,
+                reference=reference,
+            )
+
+        with open(instance.sheet_file, "w", encoding="utf-8") as schematic_file:
+            schematic_file.write(_format_sexp_kicad(schematic_data))
+
+    def _replace_reference_in_net_name(
+        self,
+        net_name: str,
+        reference_map: dict[str, str],
+    ) -> str:
+        # KiCad often encodes the reference directly in local net names.
+        patterns = [
+            r"^(Net-\()(?P<ref>[^-()]+)(?P<suffix>-.*\))$",
+            r"^(unconnected-\()(?P<ref>[^-()]+)(?P<suffix>-.*\))$",
+        ]
+        for pattern in patterns:
+            match = re.match(pattern, net_name)
+            if match:
+                original_ref = match.group("ref")
+                new_ref = reference_map.get(original_ref, original_ref)
+                return f"{match.group(1)}{new_ref}{match.group('suffix')}"
+        return net_name
+
+    def _is_reference_based_net_name(self, net_name: str) -> bool:
+        return any(
+            re.match(pattern, net_name)
+            for pattern in (
+                r"^Net-\([^()]+\)$",
+                r"^unconnected-\([^()]+\)$",
+            )
+        )
+
+    def _remap_net_name(
+        self,
+        net_name: str,
+        instance: InstantiatedSubsystem,
+        footprint_reference_map: dict[str, str] | None = None,
+    ) -> str:
+        # Reference-based local nets keep their KiCad naming style,
+        # while hierarchical labels are namespaced by sheet instance.
+        if not net_name:
+            return net_name
+
+        reference_map = footprint_reference_map or instance.reference_map
+        remapped = self._replace_reference_in_net_name(
+            net_name, reference_map)
+        if self._is_reference_based_net_name(net_name):
+            return remapped
+
+        suffix = net_name.lstrip("/")
+        return f"/{instance.sheet_name}/{suffix}"
+
+    def _prepare_instance_pcb(
+        self,
+        instance: InstantiatedSubsystem,
+        sheet_uuid: str,
+    ) -> Sexp:
+        # Create a PCB clone that matches the already-annotated schematic copy.
+        if instance.pcb_file is None:
+            return []
+
+        pcb_source = loads(instance.pcb_file.read_text(encoding="utf-8"))
+        pcb_data, pcb_uuid_map = self._clone_with_new_uuids(pcb_source)
+        self._replace_group_member_uuids(pcb_data, pcb_uuid_map)
+
+        footprint_reference_map: dict[str, str] = {}
+        for item in pcb_data:
+            if not (isinstance(item, list) and item and item[0] == Symbol("footprint")):
+                continue
+
+            # Prefer matching footprints through the schematic symbol UUID stored
+            # in the footprint path, because source templates may already have
+            # inconsistent or duplicated textual references.
+            ref_prop = self._get_property_node(item, "Reference")
+            original_ref = str(ref_prop[2]) if ref_prop is not None and len(ref_prop) > 2 else None
+            original_symbol_uuid = None
+            for child in item[1:]:
+                if isinstance(child, list) and child and child[0] == Symbol("path") and len(child) > 1:
+                    path_parts = [part for part in str(child[1]).split("/") if part]
+                    original_symbol_uuid = path_parts[-1] if path_parts else None
+                    break
+
+            resolved_ref = None
+            if original_symbol_uuid is not None:
+                resolved_ref = instance.symbol_reference_map.get(original_symbol_uuid)
+            if resolved_ref is None and original_ref is not None:
+                resolved_ref = instance.reference_map.get(original_ref, original_ref)
+            if original_ref is not None and resolved_ref is not None:
+                footprint_reference_map[original_ref] = resolved_ref
+
+        for item in pcb_data:
+            if not (isinstance(item, list) and item):
+                continue
+
+            # Rewrite both top-level nets and per-footprint metadata so each
+            # imported instance is electrically isolated from the others.
+            if item[0] == Symbol("net") and len(item) > 2 and isinstance(item[1], int):
+                item[2] = self._remap_net_name(
+                    str(item[2]), instance, footprint_reference_map)
+                continue
+
+            if item[0] != Symbol("footprint"):
+                continue
+
+            ref_prop = self._get_property_node(item, "Reference")
+            if ref_prop is not None and len(ref_prop) > 2:
+                original_ref = str(ref_prop[2])
+                ref_prop[2] = footprint_reference_map.get(
+                    original_ref,
+                    instance.reference_map.get(original_ref, original_ref),
+                )
+
+            for child in item[1:]:
+                if not (isinstance(child, list) and child):
+                    continue
+
+                if child[0] == Symbol("path") and len(child) > 1:
+                    path_parts = [part for part in str(child[1]).split("/") if part]
+                    symbol_uuid = path_parts[-1] if path_parts else ""
+                    child[1] = f"/{sheet_uuid}/{instance.schematic_uuid_map.get(symbol_uuid, symbol_uuid)}"
+                elif child[0] == Symbol("sheetname") and len(child) > 1:
+                    child[1] = f"/{instance.sheet_name}/"
+                elif child[0] == Symbol("sheetfile") and len(child) > 1:
+                    child[1] = instance.sheet_file.name
+
+        return pcb_data
+
+    def _next_project_net_id(self, pcb_data: list[Any]) -> int:
+        # Imported PCB chunks reuse net IDs, so each append needs a new range.
+        max_net_id = 0
+        for item in pcb_data:
+            if (
+                isinstance(item, list)
+                and item
+                and item[0] == Symbol("net")
+                and len(item) > 1
+                and isinstance(item[1], int)
+            ):
+                max_net_id = max(max_net_id, int(item[1]))
+        return max_net_id + 1
+
+    def _remap_pcb_net_ids(
+        self,
+        pcb_data: Sexp,
+        start_net_id: int,
+    ) -> tuple[Sexp, int]:
+        # Shift net IDs before merging so different subsystem copies stay disjoint.
+        if not isinstance(pcb_data, list):
+            return pcb_data, start_net_id
+
+        net_id_map = {0: 0}
+        net_name_map = {0: ""}
+        next_net_id = start_net_id
+
+        for item in pcb_data:
+            if (
+                isinstance(item, list)
+                and item
+                and item[0] == Symbol("net")
+                and len(item) > 2
+                and isinstance(item[1], int)
+            ):
+                old_id = int(item[1])
+                if old_id == 0:
+                    item[2] = ""
+                    continue
+                if old_id not in net_id_map:
+                    net_id_map[old_id] = next_net_id
+                    next_net_id += 1
+                net_name_map[old_id] = str(item[2])
+                item[1] = net_id_map[old_id]
+
+        def _walk(node: Sexp) -> None:
+            if not isinstance(node, list):
+                return
+
+            if node and node[0] == Symbol("net") and len(node) > 1 and isinstance(node[1], int):
+                old_id = int(node[1])
+                if old_id in net_id_map:
+                    node[1] = net_id_map[old_id]
+                    if len(node) > 2 and old_id in net_name_map:
+                        node[2] = net_name_map[old_id]
+
+            for child in node:
+                if isinstance(child, list):
+                    _walk(child)
+
+        _walk(pcb_data)
+        return pcb_data, next_net_id
+
     def get_uuid(self, pcb_item) -> str | None:
         for attribute in pcb_item:
             if isinstance(attribute, list) and str(attribute[0]) == "uuid":
@@ -992,7 +1470,8 @@ class KiCadAPI:
         for group in groups:
             for member in group[3][1:]:
                 # print(member)
-                uuids.remove(member)
+                if member in uuids:
+                    uuids.remove(member)
             uuids.append(group[2][1])
 
         if len(uuids) > 2:
@@ -1003,30 +1482,212 @@ class KiCadAPI:
                 [Symbol('members'), *uuids],
             ])
 
+    def sym(self, x: Any) -> str | None:
+        return str(x) if isinstance(x, Symbol) else None
+
+    def is_num(self, x: Any) -> bool:
+        return isinstance(x, (int, float))
+
+    def add_xy(self, node: List[Sexp], i_x: int, i_y: int, dx: float, dy: float) -> None:
+        node[i_x] = round(float(node[i_x]) + dx, 6)  # type: ignore[index]
+        node[i_y] = round(float(node[i_y]) + dy, 6)  # type: ignore[index]
+
+    def extracts_boundaries(self, tree: Sexp) -> List:
+        limits = [float('inf'), -float('inf'), float('inf'),
+                  -float('inf')]  # Left, right, up, down
+
+        if not isinstance(tree, list):
+            return
+
+        for node in tree:
+
+            temp_limits = [0, 0, 0, 0]
+            abs_temp_limits = [0, 0, 0, 0]
+            coordinates = [0, 0]  # x, y
+
+            if not isinstance(node, list) or not node:
+                continue
+            if self.sym(node[0]) != "footprint":
+                continue
+
+            # Only direct children; only first top-level (at ...)
+            for child in node[1:]:
+
+                is_crtyrd = False
+                if not isinstance(child, list) or not child:
+                    continue
+                if self.sym(child[0]) == "at" and (len(child) >= 3 and self.is_num(child[1]) and self.is_num(child[2])):
+                    coordinates[0] = round(float(child[1]), 6)
+                    coordinates[1] = round(float(child[2]), 6)
+
+                if self.sym(child[0]) == "fp_rect" or self.sym(child[0]) == "fp_line":
+                    for child_node in child:
+                        if self.sym(child_node[0]) == "layer" and child_node[1] == "F.CrtYd":
+                            is_crtyrd = True
+                        if self.sym(child_node[0]) == "start":
+                            temp_limits[0] = child_node[1]
+                            temp_limits[2] = child_node[2]
+                        if self.sym(child_node[0]) == "end":
+                            temp_limits[1] = child_node[1]
+                            temp_limits[3] = child_node[2]
+                if is_crtyrd:
+                    abs_temp_limits[0] = temp_limits[0] + coordinates[0]
+                    abs_temp_limits[1] = temp_limits[1] + coordinates[0]
+                    abs_temp_limits[2] = temp_limits[2] + coordinates[1]
+                    abs_temp_limits[3] = temp_limits[3] + coordinates[1]
+
+                    limits[0] = min(abs_temp_limits[0], limits[0])
+                    limits[1] = max(abs_temp_limits[1], limits[1])
+                    limits[2] = min(abs_temp_limits[2], limits[2])
+                    limits[3] = max(abs_temp_limits[3], limits[3])
+
+        # returns limits, sizes[x, y] and coordinates
+        return limits, [limits[1]-limits[0], limits[3]-limits[2]]
+
+    def move_top_level_footprints(self, origin: Sexp, dx: float, dy: float) -> Sexp:
+
+        if not isinstance(origin, list):
+            return
+
+        tree = deepcopy(origin)
+
+        for node in tree:
+
+            if not isinstance(node, list) or not node:
+                continue
+            if self.sym(node[0]) != "footprint":
+                continue
+
+            # Only direct children; only first top-level (at ...)
+            for child in node[1:]:
+                if not isinstance(child, list) or not child:
+                    continue
+                if self.sym(child[0]) == "at" and (len(child) >= 3 and self.is_num(child[1]) and self.is_num(child[2])):
+                    self.add_xy(child, 1, 2, dx, dy)
+
+        return tree
+
+    def move_tracks_and_vias(self, tree: Sexp, dx: float, dy: float) -> None:
+        """
+        Recursively walk the whole tree and move:
+        - segment: start/end
+        - arc: start/mid/end
+        - via: at
+        """
+        if not isinstance(tree, list):
+            return
+
+        head = self.sym(tree[0]) if tree else None
+
+        if head == "segment":
+            # Find (start x y) and (end x y) sublists
+            for child in tree[1:]:
+                if isinstance(child, list) and child:
+                    h = self.sym(child[0])
+                    if h in ("start", "end") and len(child) >= 3 and self.is_num(child[1]) and self.is_num(child[2]):
+                        self.add_xy(child, 1, 2, dx, dy)
+
+        elif head == "arc":
+            # Find (start x y), (mid x y), (end x y)
+            for child in tree[1:]:
+                if isinstance(child, list) and child:
+                    h = self.sym(child[0])
+                    if h in ("start", "mid", "end") and len(child) >= 3 and self.is_num(child[1]) and self.is_num(child[2]):
+                        self.add_xy(child, 1, 2, dx, dy)
+
+        elif head == "via":
+            # Find (at x y [..])
+            for child in tree[1:]:
+                if isinstance(child, list) and child and self.sym(child[0]) == "at":
+                    if len(child) >= 3 and self.is_num(child[1]) and self.is_num(child[2]):
+                        self.add_xy(child, 1, 2, dx, dy)
+                    break
+
+        # Recurse
+        for child in tree:
+            if isinstance(child, list):
+                self.move_tracks_and_vias(child, dx, dy)
+
+    def add_multiple_designs(self, project_path, design_instances: List[dict[str, Any]], space_x=9.5, space_y=5.5, max_x=285, max_y=198, cursor_x0=25, cursor_y0=25):
+        '''
+        Takes prepared PCB instances, and, minding their limits, arranges them in the sheet.
+        In a loop:
+        1) Places a design and updates a cursor
+        2) Moves the next design according to the cursor and stores the moved design into a variable
+        3) Restarts the loop
+        '''
+        cursor = [cursor_x0, cursor_y0]
+
+        line_height = 0
+
+        for placed in design_instances:
+            instance = placed["object"]
+            if instance.pcb_file is None:
+                continue
+
+            # The PCB is prepared per instance first, then translated on the board.
+            tree = self._prepare_instance_pcb(instance, placed["sheet_uuid"])
+            if not tree:
+                continue
+
+            abs_lim, dimensions = self.extracts_boundaries(tree)
+
+            center_coord = [(abs_lim[1]+abs_lim[0])/2,
+                            (abs_lim[3]+abs_lim[2])/2]
+
+            if dimensions[0] > max_x or dimensions[1] > max_y:
+                raise ValueError(
+                    f"Dimensions exceeded design limits in {instance.pcb_file}")
+
+            if dimensions[0] > max_x - cursor[0]:  # Moves the cursor down one line
+                if dimensions[1] > max_y - cursor[1]:
+                    raise ValueError(
+                        f"Dimensions exceeded design limits in {instance.pcb_file}")
+                cursor[1] += line_height + space_y
+                cursor[0] = cursor_x0
+                line_height = 0
+
+            # Adapts the vertical line difference
+            if line_height < dimensions[1]:
+                line_height = dimensions[1]
+
+            dx = cursor[0] - center_coord[0]
+            dy = cursor[1] - center_coord[1]
+            moved_instance = self.move_top_level_footprints(
+                tree, dx, dy)
+            self.move_tracks_and_vias(moved_instance, dx, dy)
+            self.add_pcb(project_path=project_path, pcb_data=moved_instance)
+
+            cursor[0] += dimensions[0] + space_x
 
     def add_pcb(
         self,
         project_path: Path,
-        pcb_path: Path,
+        pcb_data: Sexp,
     ) -> None:
+        # Merge a prepared PCB fragment into the project while normalizing net IDs.
         project_pcb_path = project_path / f"{project_path.name}.kicad_pcb"
-        with open(project_pcb_path, "r", encoding="utf-8") as pcb_file:
-            project_pcb_data = sexpdata.load(pcb_file)
+        project_pcb_data = loads(project_pcb_path.read_text(encoding="utf-8"))
 
-        with open(pcb_path, "r", encoding="utf-8") as f:
-            pcb_data = sexpdata.load(f)
+        pcb_data, _ = self._remap_pcb_net_ids(
+            pcb_data, self._next_project_net_id(project_pcb_data))
 
-        useful_symbols = ["net", "footprint", "segment", "group"]
-        useful_pcb_data = list(filter(lambda x: str(x[0]) in useful_symbols, pcb_data))
+        useful_symbols = ["net", "footprint", "segment", "arc", "via", "group"]
+        useful_pcb_data = [
+            item for item in pcb_data
+            if (
+                isinstance(item, list)
+                and item
+                and str(item[0]) in useful_symbols
+                and not (item[0] == Symbol("net") and len(item) > 1 and item[1] == 0)
+            )
+        ]
         self.group_pcb_items(useful_pcb_data)
-
-        pprint.pp(useful_pcb_data)
 
         project_pcb_data += useful_pcb_data
 
         with open(project_pcb_path, "w", encoding="utf-8") as pcb_file:
-            sexpdata.dump(project_pcb_data, pcb_file)
-
+            pcb_file.write(_format_sexp_kicad(project_pcb_data))
 
     def project_creation(
         self,
@@ -1039,13 +1700,21 @@ class KiCadAPI:
         project_path = PROJECT_FOLDER / project_name
 
         # dependencies
-        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'fp-lib-table', project_path / 'fp-lib-table')
-        copy(PROJECT_FOLDER/'src'/'lib-table_templates'/'sym-lib-table', project_path / 'sym-lib-table')
-        self.schematic = KiCadSchematic(f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
+        copy(PROJECT_FOLDER/'src'/'lib-table_templates' /
+             'fp-lib-table', project_path / 'fp-lib-table')
+        copy(PROJECT_FOLDER/'src'/'lib-table_templates' /
+             'sym-lib-table', project_path / 'sym-lib-table')
+        self.schematic = KiCadSchematic(
+            f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
 
-        self.schematic.add_hierarchical_sheets(
+        # Instantiate every requested template first so schematic and PCB
+        # generation share the same annotation and UUID mapping.
+        instantiated_templates = self._instantiate_subsystems(
+            project_path, template_list)
+
+        placed_instances = self.schematic.add_hierarchical_sheets(
             project_path,
-            template_list,
+            instantiated_templates,
             origin_xy=(33, 20),
             max_row_width_mm=200,   # controla quantos cabem por linha
             h_gap_factor=0.8,       # gap horizontal proporcional ao tamanho
@@ -1053,11 +1722,23 @@ class KiCadAPI:
             page_for_instance_start=10   # evita conflito com páginas anteriores
         )
 
-        for template in template_list:
-            if template.pcb_file is not None:
-                self.add_pcb(project_path, template.pcb_file)
+        for placed in placed_instances:
+            self._write_instantiated_schematic(
+                instance=placed["object"],
+                project_name=project_name,
+                root_uuid=placed["root_uuid"],
+                sheet_uuid=placed["sheet_uuid"],
+            )
 
-        self.schematic.export_schematic(f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
+        pcb_instances = [
+            placed for placed in placed_instances
+            if placed["object"].pcb_file is not None
+        ]
+        if pcb_instances:
+            self.add_multiple_designs(project_path, pcb_instances)
+
+        self.schematic.export_schematic(
+            f'{PROJECT_FOLDER}/{project_name}/{project_name}.kicad_sch')
 
         return self.schematic
 

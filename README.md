@@ -33,3 +33,25 @@ Other (smaller) features we’d like to add are :
 - allow the user to define their own templates outside this application
 - improve the user interface
 - add a KiCad plugin interface, for a seamless integration
+
+# Test cases
+
+## Feature tests
+
+###  Basic project generation
+
+- [ ] Can the program generate projects using the subsystem files given?
+- [ ] Can it handle multiple instances of the same subsystems?
+- [ ] Will it work on more than one layer?
+
+### Software maintenance
+
+- [ ] Is the installation process well documented?
+- [ ] Is the project supported on every computer?
+- [ ] Can the user add new subsystems?
+
+## User tests
+
+- [ ] Installation
+- [ ] Generation
+- [ ] Addition of new systems
