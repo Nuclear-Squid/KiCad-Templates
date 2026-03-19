@@ -3,5 +3,5 @@
   (type "KiCad")
   (uri "${KIPRJMOD}/../subsystems/mikrobus/MIKROE-4247.kicad_sym")
   (options "")
-  (descr "Biblioteca de simbolos do usuario"))
+  (descr "Mikrobus symbol lib"))
  )
