@@ -1,7 +1,6 @@
 sheet_name : ADC_ADS1115
 sheet_file: adc_ads1115.kicad_sch
 pcb_file: adc_ads1115.kicad_pcb
-at_xy: [0, 0]
 size_wh: [30, 20]
 properties:
   Comment: ADC ADS1115

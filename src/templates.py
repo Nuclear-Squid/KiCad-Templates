@@ -22,6 +22,7 @@ class TemplateMetadata:
     dev_name: str
     sheet_name: str
     sheet_file: Path
+    pcb_file:   Path
     size_wh: tuple[float, float]
     properties: dict[str, str] = field(default_factory=dict)
     left_pins: list[HierarchicalPin] = field(default_factory=list)
@@ -37,6 +38,7 @@ class TemplateMetadata:
             meta["right_pins"] = list(map(unpack, meta.get("right_pins", [])))
             meta["dev_name"]   = basename(path_to_yaml_metadata.parent)
             meta["sheet_file"] = path_to_yaml_metadata.parent / meta["sheet_file"]
+            meta["pcb_file"]   = path_to_yaml_metadata.parent / meta["pcb_file"]
 
             return cls(**meta)
 

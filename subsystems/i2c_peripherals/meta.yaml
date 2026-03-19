@@ -1,7 +1,6 @@
 sheet_name: I2C_Peripherals
 sheet_file: i2c_peripherals.kicad_sch
 pcb_file: i2c_peripherals.kicad_pcb
-at_xy: [0, 0]
 size_wh: [30, 20]
 
 properties:
