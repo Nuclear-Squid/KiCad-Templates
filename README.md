@@ -40,8 +40,8 @@ Other (smaller) features we’d like to add are :
 
 ###  Basic project generation
 
-- [ ] Can the program generate projects using the subsystem files given?
-- [ ] Can it handle multiple instances of the same subsystems?
+- [x] Can the program generate projects using the subsystem files given?
+- [x] Can it handle multiple instances of the same subsystems?
 - [ ] Will it work on more than one layer?
 
 ### Software maintenance

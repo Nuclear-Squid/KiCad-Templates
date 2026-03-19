@@ -1,7 +1,7 @@
 (sym_lib_table
- (lib(name "Microbus")
+ (lib(name "Mikrobus")
   (type "KiCad")
   (uri "${KIPRJMOD}/../subsystems/mikrobus/MIKROE-4247.kicad_sym")
   (options "")
-  (descr "Mikrobus symbol lib"))
+  (descr "Mikrobus Symbol lib))
  )

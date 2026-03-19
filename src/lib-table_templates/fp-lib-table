@@ -1,5 +1,5 @@
 (fp_lib_table
- (lib(name "User")
+ (lib(name "Mikrobus")
   (type "KiCad")
   (uri "${KIPRJMOD}/../subsystems/mikrobus/mikrobus.pretty")
   (options "")

@@ -375,7 +375,7 @@
 			)
 		)
 	)
-	(footprint "User:MIKROE4247"
+	(footprint "Mikrobus:MIKROE4247"
 		(layer "F.Cu")
 		(uuid "44275d9c-c6bc-410d-a71d-30378c416ace")
 		(at 110.22 83.5)
