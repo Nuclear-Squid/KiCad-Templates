@@ -42,9 +42,21 @@ def new(project_path: Path, template_names: tuple[str, ...]):
             return
 
     templates = Template.get_templates(template_names, KiCadProject.template_folders)
+    # pcb_instances = map(lambda x: { "object": x }, templates)
 
     project = KiCadProject(project_path)
     project.schematic.add_hierarchical_sheets(templates)
+
+    pcb_instances = []
+    sheets = project.schematic.data.iter_children_with_name("sheet")
+    for i, s in enumerate(sheets):
+        # print(s.get_child("uuid"))
+        pcb_instances.append({
+            "sheet_uuid": s.get_child("uuid"),
+            "object":     templates[i]
+        })
+
+    project.pcb.add_multiple_designs(project_path, pcb_instances)
     project.write_to_disk()
 
     print(f"Successfully created project '{project_name}'")

@@ -7,6 +7,7 @@ from typing import Self, ClassVar
 
 from kicad_sexp import KiCadSexpNode
 from schematic import KiCadSchematic
+from pcb import KiCadPcb
 
 PROJECT_FOLDER = Path(__file__).parent.parent
 
@@ -15,7 +16,7 @@ PROJECT_FOLDER = Path(__file__).parent.parent
 class KiCadProject:
     project_path: Path
     schematic: KiCadSchematic
-    pcb: KiCadSexpNode
+    pcb: KiCadPcb
     fp_lib_table: KiCadSexpNode
     sym_lib_table: KiCadSexpNode
     project_raw_json: str
@@ -28,12 +29,12 @@ class KiCadProject:
 
         self.schematic = KiCadSchematic.new_empty(project_name)
 
-        self.pcb = KiCadSexpNode.from_sexpdata([
+        self.pcb = KiCadPcb(KiCadSexpNode.from_sexpdata([
             "kicad_pcb",
             ["version", 20241229],
             ["generator", "pcbnew"],
             ["generator_version", "9.0"],
-        ])
+        ]))
 
         self.fp_lib_table = KiCadSexpNode.from_sexpdata([
             "fp_lib_table",
@@ -109,6 +110,6 @@ class KiCadProject:
         # self.schematic.write_to_file(self.project_path / f"{project_name}.kicad_sch")
         self.schematic.write_to_disk(self.project_path)
 
-        self.pcb.write_to_file(self.project_path / f"{project_name}.kicad_pcb")
+        self.pcb.data.write_to_file(self.project_path / f"{project_name}.kicad_pcb")
         self.fp_lib_table.write_to_file(self.project_path / "fp-lib-table")
         self.sym_lib_table.write_to_file(self.project_path / "sym-lib-table")

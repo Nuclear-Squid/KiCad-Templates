@@ -27,6 +27,9 @@ class TemplateMetadata:
     properties: dict[str, str] = field(default_factory=dict)
     left_pins: list[HierarchicalPin] = field(default_factory=list)
     right_pins: list[HierarchicalPin] = field(default_factory=list)
+    reference_map: dict[str, str] = field(default_factory=dict)
+    schematic_uuid_map: dict[str, str] = field(default_factory=dict)
+    symbol_reference_map: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def load_from_yaml(cls, path_to_yaml_metadata: Path) -> Self | None:
