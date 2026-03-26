@@ -72,6 +72,16 @@ class KiCadSexpNode:
             max_depth -= 1
             items_to_check = flatmap(lambda x: x.children, items_to_check)
 
+    def get_property(
+        self,
+        property_name: str,
+        max_depth: int = 2 ** 16
+    ) -> Self | None:
+        for child in self.iter_children_with_name("property"):
+            if child.attributes[0] == property_name:
+                return child
+        return None
+
 
     def get_child(self, symbol_name: str, max_depth: int = 2 ** 16) -> Self | None:
         return next(self.iter_children_with_name(symbol_name, max_depth))
